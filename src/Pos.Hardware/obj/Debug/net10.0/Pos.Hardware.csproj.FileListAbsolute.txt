@@ -1,0 +1,16 @@
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/bin/Debug/net10.0/Pos.Hardware.deps.json
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/bin/Debug/net10.0/Pos.Hardware.dll
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/bin/Debug/net10.0/Pos.Hardware.pdb
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/bin/Debug/net10.0/Pos.Core.dll
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/bin/Debug/net10.0/Pos.Core.pdb
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.csproj.AssemblyReference.cache
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.GeneratedMSBuildEditorConfig.editorconfig
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.AssemblyInfoInputs.cache
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.AssemblyInfo.cs
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.csproj.CoreCompileInputs.cache
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.sourcelink.json
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hard.8435191D.Up2Date
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.dll
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/refint/Pos.Hardware.dll
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/Pos.Hardware.pdb
+/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/obj/Debug/net10.0/ref/Pos.Hardware.dll

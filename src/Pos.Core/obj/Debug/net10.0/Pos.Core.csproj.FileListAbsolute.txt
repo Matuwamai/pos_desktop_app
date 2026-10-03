@@ -1,0 +1,12 @@
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/bin/Debug/net10.0/Pos.Core.deps.json
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/bin/Debug/net10.0/Pos.Core.dll
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/bin/Debug/net10.0/Pos.Core.pdb
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/Pos.Core.GeneratedMSBuildEditorConfig.editorconfig
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/Pos.Core.AssemblyInfoInputs.cache
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/Pos.Core.AssemblyInfo.cs
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/Pos.Core.csproj.CoreCompileInputs.cache
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/Pos.Core.sourcelink.json
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/Pos.Core.dll
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/refint/Pos.Core.dll
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/Pos.Core.pdb
+/home/matu-wamai/projects/pos/desktop/src/Pos.Core/obj/Debug/net10.0/ref/Pos.Core.dll
