@@ -1,0 +1,38 @@
+# .NET build output (SDK-generated, never source)
+[Bb]in/
+[Oo]bj/
+[Tt]est[Rr]esults/
+*.user
+*.suo
+*.userprefs
+.vs/
+.idea/
+*.swp
+
+# Published / packaged output
+[Pp]ublish/
+[Pp]ackages/
+*.nupkg
+*.snupkg
+artifacts/
+
+# Local runtime data — the terminal's SQLite database, outbox and secret
+# material must never be committed, even for a developer's test run.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+local-data/
+secrets/
+appsettings.Local.json
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
