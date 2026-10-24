@@ -26,6 +26,16 @@
     <ProjectReference Include="..\..\src\Pos.Core\Pos.Core.csproj" />
     <ProjectReference Include="..\..\src\Pos.Infra\Pos.Infra.csproj" />
     <ProjectReference Include="..\..\src\Pos.Hardware\Pos.Hardware.csproj" />
+    <ProjectReference Include="..\..\src\Pos.Desktop\Pos.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Renders Avalonia views off-screen (no display server needed — this is what lets
+         the UI smoke test run in CI). Not Avalonia.Headless.XUnit: that package pulls in
+         xunit.v3, which collides with this project's xunit v2 (FactAttribute defined in
+         both) — HeadlessUiTests bootstraps the headless app itself instead, with plain
+         [Fact]. -->
+    <PackageReference Include="Avalonia.Headless" Version="12.1.4" />
   </ItemGroup>
 
   <ItemGroup>

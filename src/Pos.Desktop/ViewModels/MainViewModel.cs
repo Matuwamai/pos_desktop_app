@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Net.Sockets;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pos.Infra.Api;
@@ -53,11 +54,14 @@ public sealed partial class MainViewModel : ViewModelBase
             IsOnline = true;
             await LoadProductsFromLocalAsync();
         }
-        catch (ApiClientException)
+        catch (Exception ex) when (ex is ApiClientException or HttpRequestException or TaskCanceledException or SocketException)
         {
-            // No connectivity, device revoked, or the server rejected the token — the
-            // till keeps working from whatever it already pulled; see IsOnline in the
-            // status bar. Phase 1 doesn't yet surface *why* (network vs. revoked).
+            // ApiClientException: the server answered but rejected the call (revoked
+            // device, etc). HttpRequestException/SocketException: no route to the server
+            // at all — by far the common case offline. TaskCanceledException: the request
+            // timed out. All three mean the same thing here: the till keeps working from
+            // whatever it already pulled; see IsOnline in the status bar. Phase 1 doesn't
+            // yet surface *why* (network vs. revoked) — just that it isn't online.
             IsOnline = false;
         }
         finally
