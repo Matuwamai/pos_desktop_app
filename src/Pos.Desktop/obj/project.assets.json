@@ -676,6 +676,42 @@
             "related": ".xml"
           }
         }
+      },
+      "Pos.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/Pos.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Pos.Core.dll": {}
+        }
+      },
+      "Pos.Hardware/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "Pos.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Pos.Hardware.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Pos.Hardware.dll": {}
+        }
+      },
+      "Pos.Infra/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "Pos.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Pos.Infra.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Pos.Infra.dll": {}
+        }
       }
     }
   },
@@ -1604,6 +1640,21 @@
         "tmds.dbus.protocol.0.94.1.nupkg.sha512",
         "tmds.dbus.protocol.nuspec"
       ]
+    },
+    "Pos.Core/1.0.0": {
+      "type": "project",
+      "path": "../Pos.Core/Pos.Core.csproj",
+      "msbuildProject": "../Pos.Core/Pos.Core.csproj"
+    },
+    "Pos.Hardware/1.0.0": {
+      "type": "project",
+      "path": "../Pos.Hardware/Pos.Hardware.csproj",
+      "msbuildProject": "../Pos.Hardware/Pos.Hardware.csproj"
+    },
+    "Pos.Infra/1.0.0": {
+      "type": "project",
+      "path": "../Pos.Infra/Pos.Infra.csproj",
+      "msbuildProject": "../Pos.Infra/Pos.Infra.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -1612,7 +1663,10 @@
       "Avalonia.Desktop >= 12.1.3",
       "Avalonia.Fonts.Inter >= 12.1.3",
       "Avalonia.Themes.Fluent >= 12.1.3",
-      "AvaloniaUI.DiagnosticsSupport >= 2.2.3"
+      "AvaloniaUI.DiagnosticsSupport >= 2.2.3",
+      "Pos.Core >= 1.0.0",
+      "Pos.Hardware >= 1.0.0",
+      "Pos.Infra >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -1640,7 +1694,17 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "/home/matu-wamai/projects/pos/desktop/src/Pos.Core/Pos.Core.csproj": {
+              "projectPath": "/home/matu-wamai/projects/pos/desktop/src/Pos.Core/Pos.Core.csproj"
+            },
+            "/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/Pos.Hardware.csproj": {
+              "projectPath": "/home/matu-wamai/projects/pos/desktop/src/Pos.Hardware/Pos.Hardware.csproj"
+            },
+            "/home/matu-wamai/projects/pos/desktop/src/Pos.Infra/Pos.Infra.csproj": {
+              "projectPath": "/home/matu-wamai/projects/pos/desktop/src/Pos.Infra/Pos.Infra.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
@@ -1696,7 +1760,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.112/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.113/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",
