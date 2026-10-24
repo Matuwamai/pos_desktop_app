@@ -10,9 +10,11 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
-    <!-- All four target OSes' RIDs so a plain `dotnet build` doesn't warn about an
-         unused one; the desktop head still builds for the current machine by default. -->
-    <RuntimeIdentifiers>win-x64;linux-x64;linux-arm64;osx-arm64</RuntimeIdentifiers>
+    <!-- Target RIDs are declared per-publish (`dotnet publish -r <rid>`), not here —
+         listing them in RuntimeIdentifiers makes even a plain `dotnet build` restore
+         every OS's self-contained runtime pack (hundreds of MB, four times over). The
+         CI matrix (ubuntu/windows/macos) builds+tests on each native runner instead;
+         win-x64/linux-x64/linux-arm64/osx-arm64 are the Phase 5 publish targets. -->
     <InvariantGlobalization>false</InvariantGlobalization>
     <Deterministic>true</Deterministic>
   </PropertyGroup>

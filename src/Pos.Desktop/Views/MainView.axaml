@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.Desktop.ViewModels"
+             x:Class="Pos.Desktop.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="#1F2937" Padding="12,8">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <Ellipse Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0"
+                 Fill="{Binding IsOnline, Converter={x:Static vm:BoolConverters.OnlineColor}}" />
+        <TextBlock Grid.Column="1" Text="{Binding SyncStatus}" Foreground="White" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding SignedInAs.Name}" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <Button Grid.Column="3" Content="Sync now" Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}" />
+      </Grid>
+    </Border>
+
+    <DataGrid ItemsSource="{Binding Products}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Product" Binding="{Binding ProductName}" Width="2*" />
+        <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="*" />
+        <DataGridTextColumn Header="Price" Binding="{Binding Price}" Width="*" />
+        <DataGridTextColumn Header="Stock" Binding="{Binding StockQuantity}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

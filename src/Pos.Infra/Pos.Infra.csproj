@@ -10,4 +10,22 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Microsoft.AspNetCore.DataProtection ships as a shared-framework reference
+         package (empty outside ASP.NET Core apps) — this FrameworkReference pulls in
+         the actual ref/runtime assemblies for a plain console/desktop app. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SQLCipher-backed e_sqlcipher bundle gives Microsoft.Data.Sqlite an encrypted
+         database (PRAGMA key=...) without a separate native dependency to manage. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
+    <!-- Verifies the roster's bcrypt PIN hash locally for offline PIN login — the
+         same hash algorithm the server uses (services/user.js hashPin), never the
+         password hash. -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.2.1" />
+  </ItemGroup>
+
 </Project>

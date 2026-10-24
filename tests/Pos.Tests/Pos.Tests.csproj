@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- CA1707 (no underscores in identifiers) fights the xUnit convention of
+         naming test methods like a sentence (Method_condition_expectedResult) —
+         suppressed here only, not for the shipping projects. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +26,10 @@
     <ProjectReference Include="..\..\src\Pos.Core\Pos.Core.csproj" />
     <ProjectReference Include="..\..\src\Pos.Infra\Pos.Infra.csproj" />
     <ProjectReference Include="..\..\src\Pos.Hardware\Pos.Hardware.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Fixtures\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

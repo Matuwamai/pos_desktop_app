@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.Desktop.ViewModels"
+             xmlns:api="using:Pos.Infra.Api"
+             x:Class="Pos.Desktop.Views.SetupWizardView"
+             x:DataType="vm:SetupWizardViewModel">
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="420">
+    <StackPanel Spacing="12" IsVisible="{Binding IsConnectStep}">
+      <TextBlock Text="Connect this terminal" FontSize="20" FontWeight="Bold" />
+      <TextBlock Text="Server URL" />
+      <TextBox Text="{Binding ServerUrl}" />
+      <TextBlock Text="Business subdomain" />
+      <TextBox Text="{Binding Subdomain}" />
+      <TextBlock Text="Admin email" />
+      <TextBox Text="{Binding Email}" />
+      <TextBlock Text="Password" />
+      <TextBox Text="{Binding Password}" PasswordChar="•" />
+      <Button Content="Sign in" Command="{Binding LoginCommand}" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Stretch" />
+    </StackPanel>
+
+    <StackPanel Spacing="12" IsVisible="{Binding IsChooseLocationStep}">
+      <TextBlock Text="Choose this terminal's location" FontSize="20" FontWeight="Bold" />
+      <ListBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" Height="160">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="api:LocationSummary">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <Button Content="Next" Command="{Binding ChooseLocationCommand}" HorizontalAlignment="Stretch" />
+    </StackPanel>
+
+    <StackPanel Spacing="12" IsVisible="{Binding IsRegisterTerminalStep}">
+      <TextBlock Text="Name this terminal" FontSize="20" FontWeight="Bold" />
+      <TextBox Text="{Binding TerminalName}" />
+      <Button Content="Register and enroll" Command="{Binding RegisterAndEnrollCommand}" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Stretch" />
+    </StackPanel>
+
+    <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,12,0,0" />
+  </Grid>
+</UserControl>

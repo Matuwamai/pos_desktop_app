@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.Desktop.ViewModels"
+             xmlns:auth="using:Pos.Infra.Auth"
+             x:Class="Pos.Desktop.Views.LockScreenView"
+             x:DataType="vm:LockScreenViewModel">
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="320">
+    <StackPanel Spacing="12">
+      <TextBlock Text="Who's ringing up?" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" />
+      <ListBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}" Height="140">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="auth:RosterUser">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <TextBox Text="{Binding Pin}" PasswordChar="•" IsReadOnly="True" HorizontalContentAlignment="Center" FontSize="24" />
+
+      <Grid ColumnDefinitions="*,*,*" RowDefinitions="*,*,*,*">
+        <Button Grid.Row="0" Grid.Column="0" Content="1" Command="{Binding AppendDigitCommand}" CommandParameter="1" />
+        <Button Grid.Row="0" Grid.Column="1" Content="2" Command="{Binding AppendDigitCommand}" CommandParameter="2" />
+        <Button Grid.Row="0" Grid.Column="2" Content="3" Command="{Binding AppendDigitCommand}" CommandParameter="3" />
+        <Button Grid.Row="1" Grid.Column="0" Content="4" Command="{Binding AppendDigitCommand}" CommandParameter="4" />
+        <Button Grid.Row="1" Grid.Column="1" Content="5" Command="{Binding AppendDigitCommand}" CommandParameter="5" />
+        <Button Grid.Row="1" Grid.Column="2" Content="6" Command="{Binding AppendDigitCommand}" CommandParameter="6" />
+        <Button Grid.Row="2" Grid.Column="0" Content="7" Command="{Binding AppendDigitCommand}" CommandParameter="7" />
+        <Button Grid.Row="2" Grid.Column="1" Content="8" Command="{Binding AppendDigitCommand}" CommandParameter="8" />
+        <Button Grid.Row="2" Grid.Column="2" Content="9" Command="{Binding AppendDigitCommand}" CommandParameter="9" />
+        <Button Grid.Row="3" Grid.Column="0" Content="⌫" Command="{Binding BackspaceCommand}" />
+        <Button Grid.Row="3" Grid.Column="1" Content="0" Command="{Binding AppendDigitCommand}" CommandParameter="0" />
+        <Button Grid.Row="3" Grid.Column="2" Content="Unlock" Command="{Binding UnlockCommand}" IsEnabled="{Binding !IsBusy}" />
+      </Grid>
+
+      <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" HorizontalAlignment="Center" />
+    </StackPanel>
+  </Grid>
+</UserControl>
