@@ -18,11 +18,15 @@ public sealed partial class TenderLineViewModel : ViewModelBase
         AmountText = amount > 0 ? amount.ToString("0.00", CultureInfo.InvariantCulture) : "";
     }
 
+    [NotifyPropertyChangedFor(nameof(IsMpesa))]
+    [NotifyPropertyChangedFor(nameof(IsCardOrOther))]
     [ObservableProperty] private string _method;
     [ObservableProperty] private string _amountText = "";
     [ObservableProperty] private string _transactionRef = "";
 
     public decimal Amount => decimal.TryParse(AmountText, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) ? v : 0;
+    public bool IsMpesa => Method == Pos.Core.Sync.OfflinePaymentMethod.Mpesa;
+    public bool IsCardOrOther => Method == Pos.Core.Sync.OfflinePaymentMethod.Card || Method == Pos.Core.Sync.OfflinePaymentMethod.Other;
 }
 
 /// <summary>
@@ -36,20 +40,31 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
     // Instance property, not static: Avalonia's {Binding} only resolves against the
     // DataContext instance, not static members (those need {x:Static}) — simpler to
     // make this an instance property than to switch every binding site to x:Static.
-    public string[] Methods { get; } = [OfflinePaymentMethod.Cash, OfflinePaymentMethod.Card, OfflinePaymentMethod.Other];
+    public string[] Methods { get; } =
+        [OfflinePaymentMethod.Cash, OfflinePaymentMethod.Card, OfflinePaymentMethod.Mpesa, OfflinePaymentMethod.Other];
 
-    public PaymentDialogViewModel(decimal total)
+    public PaymentDialogViewModel(decimal total, string? mpesaType = null, string? mpesaShortcode = null)
     {
         Total = total;
+        MpesaShortcode = mpesaShortcode;
+        MpesaHint = string.IsNullOrWhiteSpace(mpesaShortcode)
+            ? "M-Pesa isn't set up yet — add a till/paybill number in Business Settings."
+            : $"Have the customer pay {(mpesaType == "PAYBILL" ? "Paybill" : "Till")} number {mpesaShortcode}, then enter the confirmation code below.";
         AddLineInternal(OfflinePaymentMethod.Cash, total);
     }
+
+    public string? MpesaShortcode { get; }
+    public string MpesaHint { get; }
 
     private void NotifyTotalsChanged()
     {
         OnPropertyChanged(nameof(Tendered));
         OnPropertyChanged(nameof(Remaining));
         OnPropertyChanged(nameof(CanSubmit));
+        OnPropertyChanged(nameof(HasMpesaLine));
     }
+
+    public bool HasMpesaLine => Lines.Any(l => l.Method == OfflinePaymentMethod.Mpesa);
 
     private void AddLineInternal(string method, decimal amount)
     {
@@ -64,7 +79,8 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
 
     public decimal Tendered => Lines.Sum(l => l.Amount);
     public decimal Remaining => Math.Round(Total - Tendered, 2);
-    public bool CanSubmit => Remaining <= 0.001m && Lines.Count > 0 && Lines.All(l => l.Amount > 0);
+    public bool CanSubmit => Remaining <= 0.001m && Lines.Count > 0 &&
+        Lines.All(l => l.Amount > 0 && (l.Method != OfflinePaymentMethod.Mpesa || !string.IsNullOrWhiteSpace(l.TransactionRef)));
 
     public IReadOnlyList<OfflineOrderPayment>? Result { get; private set; }
     public Action<bool>? RequestClose { get; set; }

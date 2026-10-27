@@ -93,6 +93,7 @@ public static class OfflinePaymentMethod
 {
     public const string Cash = "CASH";
     public const string Card = "CARD";
+    public const string Mpesa = "MPESA";
     public const string Other = "OTHER";
 }
 

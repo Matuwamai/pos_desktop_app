@@ -40,6 +40,8 @@ public sealed partial class CashierViewModel : ViewModelBase
     private string? _locationName;
     private string _tenantName;
     private byte[]? _tenantLogoBytes;
+    private string? _mpesaType;
+    private string? _mpesaShortcode;
     private IReceiptPrinter? _printer;
     private bool _openDrawerOnCash;
 
@@ -96,7 +98,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     public Func<CatalogProduct, IReadOnlyList<ModifierGroupOptions>, Task<CartLine?>>? ShowVariantPicker { get; set; }
     public Func<string, decimal?, string?, Task<(bool Applied, decimal Amount, string? Reason)>>? ShowDiscountDialog { get; set; }
     public Func<bool, Task<(bool Applied, string Id, string Name)>>? ShowCustomerDialog { get; set; }
-    public Func<decimal, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
+    public Func<decimal, string?, string?, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerOpenDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerCloseDialog { get; set; }
     public Func<ReceiptDocument, Task>? ShowReceiptDialog { get; set; }
@@ -242,7 +244,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     {
         if (ShowPaymentDialog is null) return;
         var totals = _cart.ComputeTotals();
-        var payments = await ShowPaymentDialog(totals.Total);
+        var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode);
         if (payments is null) return;
 
         SaleResult result;
@@ -390,13 +392,15 @@ public sealed partial class CashierViewModel : ViewModelBase
     private async Task LoadTenantAsync()
     {
         await using var cmd = _db.Connection.CreateCommand();
-        cmd.CommandText = "SELECT name, logo_local_path FROM tenant WHERE id = 'self'";
+        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode FROM tenant WHERE id = 'self'";
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync()) return;
 
         _tenantName = reader.GetString(0);
         var logoPath = reader.IsDBNull(1) ? null : reader.GetString(1);
         _tenantLogoBytes = logoPath is not null && File.Exists(logoPath) ? await File.ReadAllBytesAsync(logoPath) : null;
+        _mpesaType = reader.IsDBNull(2) ? null : reader.GetString(2);
+        _mpesaShortcode = reader.IsDBNull(3) ? null : reader.GetString(3);
     }
 
     private async Task LoadPrinterAsync()

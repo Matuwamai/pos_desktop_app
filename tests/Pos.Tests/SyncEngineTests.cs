@@ -87,19 +87,40 @@ public class SyncEngineTests : IAsyncDisposable
         Assert.Equal(0L, Convert.ToInt64(isActive, System.Globalization.CultureInfo.InvariantCulture));
     }
 
+    [Fact]
+    public async Task Tenant_mpesa_fields_land_in_the_local_tenant_table()
+    {
+        var handler = new FakeServerHandler(new Queue<(long Since, PullResponse Response)>(
+        [
+            (0L, Page(serverTime: 1_700_000_600, nextSince: 10, hasMore: false,
+                tenant: new TenantRow { Name = "Acme Coffee", MpesaType = "TILL", MpesaShortcode = "174379", UpdatedAt = "2024-01-04T00:00:00Z" })),
+        ]));
+
+        await using var db = await LocalDatabase.OpenAsync(_dbPath, "test-key-4");
+        var sync = new SyncEngine(db, ApiClientWith(handler));
+        await sync.PullAllAsync("device-token");
+
+        await using var cmd = db.Connection.CreateCommand();
+        cmd.CommandText = "SELECT mpesa_type, mpesa_shortcode FROM tenant WHERE id = 'self'";
+        await using var reader = await cmd.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal("TILL", reader.GetString(0));
+        Assert.Equal("174379", reader.GetString(1));
+    }
+
     private static ApiClient ApiClientWith(HttpMessageHandler handler)
     {
         var http = new HttpClient(handler) { BaseAddress = new Uri("http://fake-server/api/v1/") };
         return new ApiClient(http);
     }
 
-    private static PullResponse Page(long serverTime, long nextSince, bool hasMore, List<LocationRow>? locations = null) => new()
+    private static PullResponse Page(long serverTime, long nextSince, bool hasMore, List<LocationRow>? locations = null, TenantRow? tenant = null) => new()
     {
         ServerTime = serverTime,
         NextSince = nextSince,
         HasMore = hasMore,
         Limit = 500,
-        Entities = new PullEntities { Locations = locations ?? [] },
+        Entities = new PullEntities { Locations = locations ?? [], Tenant = tenant },
     };
 
     public async ValueTask DisposeAsync()

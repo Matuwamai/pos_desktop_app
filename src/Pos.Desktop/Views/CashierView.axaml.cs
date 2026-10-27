@@ -86,9 +86,9 @@ public partial class CashierView : UserControl
             return (applied, dialogVm.Result?.Id ?? "", dialogVm.Result?.Name ?? "");
         };
 
-        vm.ShowPaymentDialog = async total =>
+        vm.ShowPaymentDialog = async (total, mpesaType, mpesaShortcode) =>
         {
-            var dialogVm = new PaymentDialogViewModel(total);
+            var dialogVm = new PaymentDialogViewModel(total, mpesaType, mpesaShortcode);
             var dialog = new PaymentDialog(dialogVm);
             await dialog.ShowDialog(Owner!);
             return dialogVm.Result;

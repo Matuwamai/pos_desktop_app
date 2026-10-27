@@ -323,7 +323,8 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
         // column separately, so re-upserting the tenant's text fields on every pull never
         // clobbers an already-cached logo path.
         if (entities.Tenant is { } tenant)
-            await UpsertAsync(tx, "tenant", "id", ("id", TenantSingletonId), ("name", tenant.Name), ("logo_url", tenant.LogoUrl), ("updated_at", tenant.UpdatedAt));
+            await UpsertAsync(tx, "tenant", "id", ("id", TenantSingletonId), ("name", tenant.Name), ("logo_url", tenant.LogoUrl),
+                ("mpesa_type", tenant.MpesaType), ("mpesa_shortcode", tenant.MpesaShortcode), ("updated_at", tenant.UpdatedAt));
 
         await tx.CommitAsync(ct);
     }

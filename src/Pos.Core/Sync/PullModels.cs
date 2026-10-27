@@ -42,6 +42,8 @@ public sealed class TenantRow
 {
     public string Name { get; set; } = "";
     public string? LogoUrl { get; set; }
+    public string? MpesaType { get; set; } // "TILL" | "PAYBILL" | null (not set up yet)
+    public string? MpesaShortcode { get; set; }
     public string UpdatedAt { get; set; } = "";
 }
 
