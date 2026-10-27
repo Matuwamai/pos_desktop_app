@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.Desktop.ViewModels"
+             x:Class="Pos.Desktop.Views.CashierView"
+             x:DataType="vm:CashierViewModel"
+             Name="Root">
+  <DockPanel>
+    <!-- Status bar -->
+    <Border DockPanel.Dock="Top" Background="#1F2937" Padding="12,8">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+        <Ellipse Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0"
+                 Fill="{Binding IsOnline, Converter={x:Static vm:BoolConverters.OnlineColor}}" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+          <TextBlock Text="{Binding SyncStatus}" Foreground="White" VerticalAlignment="Center" />
+          <TextBlock Foreground="#fbbf24" VerticalAlignment="Center"
+                     IsVisible="{Binding PendingSaleCount}"
+                     Text="{Binding PendingSaleCount, StringFormat='{}{0} pending'}" />
+        </StackPanel>
+        <TextBlock Grid.Column="2" Text="{Binding SignedInAs.Name}" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <Button Grid.Column="3" Content="Sync now" Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}" Margin="0,0,6,0" />
+        <Button Grid.Column="4" Content="Close drawer" Command="{Binding CloseDrawerCommand}" Margin="0,0,6,0" />
+        <Button Grid.Column="5" Content="Lock" Command="{Binding LogoutCommand}" Margin="0,0,6,0" />
+      </Grid>
+    </Border>
+
+    <TextBlock DockPanel.Dock="Top" Text="{Binding ErrorMessage}" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+               Foreground="Red" Padding="8" />
+
+    <Grid ColumnDefinitions="2*,*">
+      <!-- Catalog -->
+      <DockPanel Grid.Column="0" Margin="8">
+        <TextBox DockPanel.Dock="Top" Name="SearchBox" PlaceholderText="Search or scan a barcode (F2)" Text="{Binding SearchText}" Margin="0,0,0,8" />
+        <ComboBox DockPanel.Dock="Top" Margin="0,0,0,8" PlaceholderText="All categories"
+                  ItemsSource="{Binding Categories}" SelectedValue="{Binding SelectedCategoryId}" SelectedValueBinding="{Binding Id}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:CategoryOption">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Products}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CatalogProduct">
+                <Button Width="150" Height="80" Margin="4"
+                        Command="{Binding #Root.((vm:CashierViewModel)DataContext).PickProductCommand}" CommandParameter="{Binding}">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap" FontWeight="Bold" />
+                    <TextBlock Text="{Binding Variants[0].Price, StringFormat='{}{0:0.00}'}" Foreground="Gray" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+
+      <!-- Cart -->
+      <DockPanel Grid.Column="1" Margin="8" Background="#F3F4F6">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="4">
+          <Button Content="Customer" Command="{Binding OpenCustomerCommand}" />
+          <Button Content="Discount" Command="{Binding OpenDiscountCommand}" />
+          <Button Content="Hold" Command="{Binding HoldTicketCommand}" />
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Text="{Binding CustomerName, StringFormat='Customer: {0}'}"
+                   IsVisible="{Binding CustomerName, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="4" />
+
+        <Border DockPanel.Dock="Top" IsVisible="{Binding HeldTickets.Count}" Background="#E5E7EB" Padding="4" Margin="4">
+          <StackPanel>
+            <TextBlock Text="Held tickets" FontWeight="Bold" />
+            <ItemsControl ItemsSource="{Binding HeldTickets}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:HeldTicketSummary">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Resume"
+                            Command="{Binding #Root.((vm:CashierViewModel)DataContext).ResumeHeldTicketCommand}" CommandParameter="{Binding Id}" />
+                    <Button Grid.Column="2" Content="✕"
+                            Command="{Binding #Root.((vm:CashierViewModel)DataContext).DiscardHeldTicketCommand}" CommandParameter="{Binding Id}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Background="White" Padding="8">
+          <StackPanel Spacing="2">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Subtotal" /><TextBlock Grid.Column="1" Text="{Binding Subtotal, StringFormat='{}{0:0.00}'}" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding DiscountTotal}"><TextBlock Text="Discount" /><TextBlock Grid.Column="1" Text="{Binding DiscountTotal, StringFormat='-{0:0.00}'}" Foreground="Red" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Tax" /><TextBlock Grid.Column="1" Text="{Binding TaxTotal, StringFormat='{}{0:0.00}'}" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="{Binding Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" FontSize="18" /></Grid>
+            <Button Content="Pay (F4)" Command="{Binding PayCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,8,0,0" />
+          </StackPanel>
+        </Border>
+
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding CartRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CartLineRow">
+                <Border Background="White" Margin="0,2" Padding="6">
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                    <StackPanel Grid.Column="0">
+                      <TextBlock Text="{Binding ProductName}" FontWeight="Bold" />
+                      <TextBlock Text="{Binding ModifiersSummary}" Foreground="Gray" FontSize="11" IsVisible="{Binding ModifiersSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="-"
+                            Command="{Binding #Root.((vm:CashierViewModel)DataContext).DecrementLineCommand}" CommandParameter="{Binding Key}" />
+                    <TextBlock Grid.Column="2" Text="{Binding Quantity}" VerticalAlignment="Center" Margin="6,0" />
+                    <Button Grid.Column="3" Content="+"
+                            Command="{Binding #Root.((vm:CashierViewModel)DataContext).IncrementLineCommand}" CommandParameter="{Binding Key}" />
+                    <TextBlock Grid.Column="4" Text="{Binding LineTotal, StringFormat='{}{0:0.00}'}" VerticalAlignment="Center" Margin="8,0,0,0" Width="60" TextAlignment="Right" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</UserControl>

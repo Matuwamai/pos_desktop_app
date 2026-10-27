@@ -43,7 +43,7 @@ public class HeadlessUiTests
     }
 
     [Fact]
-    public void MainView_with_product_list_renders()
+    public void CashierView_with_catalog_and_cart_renders()
     {
         // AppBuilder.SetupWithoutStarting() (the static ctor above) installs an Avalonia
         // dispatcher SynchronizationContext on this thread. Awaiting directly in a [Fact]
@@ -52,27 +52,35 @@ public class HeadlessUiTests
         // a thread-pool thread with no such context, so it runs to completion normally;
         // only the UI construction below (window, render) touches the dispatcher thread.
 #pragma warning disable xUnit1031 // intentional: see the comment above — this is what avoids the deadlock, not what causes it
-        var (vm, tempDir) = Task.Run(SetUpMainViewModelAsync).GetAwaiter().GetResult();
+        var (vm, tempDir) = Task.Run(SetUpCashierViewModelAsync).GetAwaiter().GetResult();
 #pragma warning restore xUnit1031
 
-        Assert.False(vm.IsOnline); // unreachable server — confirms the offline path was exercised
-        Assert.Single(vm.Products);
+        try
+        {
+            Assert.False(vm.IsOnline); // unreachable server — confirms the offline path was exercised
+            Assert.Single(vm.Products);
 
-        var view = new MainView { DataContext = vm };
-        RenderToPng(view, Path.Combine(tempDir, "main-product-list.png"));
+            var view = new CashierView { DataContext = vm };
+            RenderToPng(view, Path.Combine(tempDir, "cashier-catalog-and-cart.png"));
+        }
+        finally
+        {
+            vm.StopBackgroundSync(); // otherwise its 30s DispatcherTimer outlives this test, in the same test process
+        }
     }
 
-    private static async Task<(MainViewModel Vm, string TempDir)> SetUpMainViewModelAsync()
+    private static async Task<(CashierViewModel Vm, string TempDir)> SetUpCashierViewModelAsync()
     {
         var tempDir = CreateTempDir();
         var db = await LocalDatabase.OpenAsync(Path.Combine(tempDir, "pos.db"), "headless-test-key");
         SeedOneProduct(db);
 
-        // Deliberately unreachable — proves the screen renders its (empty-state) product
-        // list and "offline" status without a server, same as a till with no network.
+        // Deliberately unreachable — proves the screen renders its (empty-state) catalog
+        // and "offline" status without a server, same as a till with no network. No
+        // drawer-open dialog is wired, so LoadAsync's drawer gate just opens at float 0.
         var sync = new SyncEngine(db, ApiClient.ForServer(new Uri("http://127.0.0.1:1")));
         var signedInAs = new RosterUser("user-1", "Jane Cashier", "CASHIER", ["pos.sell"], MustChangePassword: false);
-        var vm = new MainViewModel(db, sync, deviceToken: "fake-token", signedInAs);
+        var vm = new CashierViewModel(db, sync, deviceToken: "fake-token", terminalId: "terminal-1", locationId: "location-1", tenantSubdomain: "acme", signedInAs, onLogout: () => { });
         await vm.LoadAsync();
         return (vm, tempDir);
     }

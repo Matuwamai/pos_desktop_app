@@ -15,8 +15,8 @@
         <DataTemplate DataType="vm:LockScreenViewModel">
           <views:LockScreenView />
         </DataTemplate>
-        <DataTemplate DataType="vm:MainViewModel">
-          <views:MainView />
+        <DataTemplate DataType="vm:CashierViewModel">
+          <views:CashierView />
         </DataTemplate>
       </ContentControl.DataTemplates>
     </ContentControl>

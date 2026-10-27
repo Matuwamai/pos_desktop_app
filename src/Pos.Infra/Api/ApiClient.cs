@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Pos.Core.Sync;
+using Pos.Infra.Json;
 
 namespace Pos.Infra.Api;
 
@@ -14,7 +15,7 @@ namespace Pos.Infra.Api;
 /// </summary>
 public sealed class ApiClient
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = SyncJson.Options;
 
     private readonly HttpClient _http;
 

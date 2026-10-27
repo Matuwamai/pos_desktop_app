@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Pos.Desktop.ViewModels"
+        x:Class="Pos.Desktop.Views.CustomerDialog"
+        x:DataType="vm:CustomerDialogViewModel"
+        Title="Customer" Width="380" Height="480"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="16" Spacing="8">
+    <TextBox Text="{Binding SearchText}" PlaceholderText="Search by name or phone" />
+    <Button Content="Remove attached customer" Command="{Binding DetachCommand}" HorizontalAlignment="Left" />
+
+    <ItemsControl ItemsSource="{Binding Results}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:CustomerSearchResult">
+          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2"
+                  Command="{Binding $parent[ItemsControl].((vm:CustomerDialogViewModel)DataContext).AttachCommand}" CommandParameter="{Binding}">
+            <StackPanel>
+              <TextBlock Text="{Binding Name}" FontWeight="Bold" />
+              <TextBlock Text="{Binding Phone}" Foreground="Gray" FontSize="11" />
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <Border Background="#F3F4F6" Padding="10" Margin="0,12,0,0">
+      <StackPanel Spacing="6">
+        <TextBlock Text="New customer" FontWeight="Bold" />
+        <TextBlock Text="Connect to the network to add a new customer." Foreground="Red" IsVisible="{Binding !IsOnline}" TextWrapping="Wrap" />
+        <TextBox Text="{Binding NewName}" PlaceholderText="Name" IsEnabled="{Binding IsOnline}" />
+        <TextBox Text="{Binding NewPhone}" PlaceholderText="Phone (optional)" IsEnabled="{Binding IsOnline}" />
+        <Button Content="Create and attach" Command="{Binding CreateCommand}" IsEnabled="{Binding IsOnline}" />
+      </StackPanel>
+    </Border>
+
+    <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+    <Button Content="Close" Command="{Binding CancelCommand}" HorizontalAlignment="Right" Margin="0,8,0,0" />
+  </StackPanel>
+</Window>

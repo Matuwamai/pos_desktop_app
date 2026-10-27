@@ -29,6 +29,9 @@ public sealed partial class AppViewModel : ViewModelBase
     private LocalDatabase? _db;
     private SyncEngine? _sync;
     private string? _deviceToken;
+    private string? _terminalId;
+    private string? _locationId;
+    private string? _tenantSubdomain;
 
     [ObservableProperty] private AppScreen _screen = AppScreen.Loading;
     [ObservableProperty] private ViewModelBase? _current;
@@ -58,6 +61,9 @@ public sealed partial class AppViewModel : ViewModelBase
 
             var (enrollment, deviceToken) = loaded.Value;
             _deviceToken = deviceToken;
+            _terminalId = enrollment.TerminalId;
+            _tenantSubdomain = enrollment.TenantSubdomain;
+            _locationId = enrollment.LocationId;
             await OpenLocalDatabaseAsync(enrollment.ServerUrl, deviceToken);
             await ShowLockAsync();
         }
@@ -81,6 +87,9 @@ public sealed partial class AppViewModel : ViewModelBase
         {
             var loaded = await _sessionStore.LoadAsync() ?? throw new InvalidOperationException("Enrollment just saved but not found");
             _deviceToken = loaded.DeviceToken;
+            _terminalId = loaded.Enrollment.TerminalId;
+            _tenantSubdomain = loaded.Enrollment.TenantSubdomain;
+            _locationId = loaded.Enrollment.LocationId;
             await OpenLocalDatabaseAsync(loaded.Enrollment.ServerUrl, loaded.DeviceToken);
             await ShowLockAsync();
         }
@@ -131,9 +140,13 @@ public sealed partial class AppViewModel : ViewModelBase
 
     private async Task ShowMainAsync(RosterUser user)
     {
-        var mainVm = new MainViewModel(_db!, _sync!, _deviceToken!, user);
-        await mainVm.LoadAsync();
+        var cashierVm = new CashierViewModel(_db!, _sync!, _deviceToken!, _terminalId!, _locationId!, _tenantSubdomain!, user, onLogout: () => _ = ShowLockAsync());
+        // Current is set *before* LoadAsync runs, not after: LoadAsync opens the drawer
+        // dialog via CashierView's code-behind-wired Show* hooks, which only get wired
+        // once CashierView actually materializes — which happens here, synchronously,
+        // as soon as Current's DataTemplate binds.
         Screen = AppScreen.Main;
-        Current = mainVm;
+        Current = cashierVm;
+        await cashierVm.LoadAsync();
     }
 }

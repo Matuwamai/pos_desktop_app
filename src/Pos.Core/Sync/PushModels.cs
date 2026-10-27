@@ -11,6 +11,7 @@ public static class SyncOpType
     public const string OrderCreate = "order.create";
     public const string DrawerOpen = "drawer.open";
     public const string DrawerClose = "drawer.close";
+    public const string CustomerCreate = "customer.create";
 }
 
 public sealed class PushRequest
@@ -117,4 +118,18 @@ public sealed class DrawerClosePayload
     public string CashierId { get; set; } = "";
     public decimal ClosingCash { get; set; }
     public DateTimeOffset ClosedAt { get; set; }
+}
+
+/// <summary>Payload for <see cref="SyncOpType.CustomerCreate"/> — matches the
+/// <c>CUSTOMER_CREATE</c> zod schema in <c>server/services/offlineSync.js</c>. Pushed
+/// synchronously, not queued through the outbox like the other op types: customer
+/// creation is online-only in v1 (see <c>SyncEngine.CreateCustomerAsync</c>), and the
+/// cashier needs the real server-assigned id back immediately to attach it to the sale
+/// in progress.</summary>
+public sealed class CustomerCreatePayload
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? Phone { get; set; }
+    public string? Email { get; set; }
 }

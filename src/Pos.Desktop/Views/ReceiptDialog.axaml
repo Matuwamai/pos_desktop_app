@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="using:Pos.Core.Interfaces"
+        xmlns:vm="using:Pos.Desktop.ViewModels"
+        x:Class="Pos.Desktop.Views.ReceiptDialog"
+        x:DataType="vm:ReceiptDialogViewModel"
+        Title="Sale complete" Width="360" Height="520" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="16">
+    <Button DockPanel.Dock="Bottom" Content="New sale" Command="{Binding NewSaleCommand}" HorizontalAlignment="Stretch" Margin="0,12,0,0" />
+    <ScrollViewer>
+      <StackPanel Spacing="4" x:DataType="vm:ReceiptDialogViewModel">
+        <TextBlock Text="{Binding Receipt.TenantName}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Receipt.LocationName}" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Receipt.TerminalReceiptNo}" HorizontalAlignment="Center" Margin="0,0,0,8" />
+
+        <ItemsControl ItemsSource="{Binding Receipt.Lines}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="core:ReceiptLine">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0">
+                  <TextBlock Text="{Binding Description}" />
+                  <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" Foreground="Gray" FontSize="11" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding LineTotal, StringFormat='{}{0:0.00}'}" VerticalAlignment="Top" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Separator Margin="0,8" />
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Subtotal" /><TextBlock Grid.Column="1" Text="{Binding Receipt.Subtotal, StringFormat='{}{0:0.00}'}" /></Grid>
+        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Receipt.DiscountTotal}"><TextBlock Text="Discount" /><TextBlock Grid.Column="1" Text="{Binding Receipt.DiscountTotal, StringFormat='-{0:0.00}'}" /></Grid>
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Tax" /><TextBlock Grid.Column="1" Text="{Binding Receipt.TaxTotal, StringFormat='{}{0:0.00}'}" /></Grid>
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total" FontWeight="Bold" /><TextBlock Grid.Column="1" Text="{Binding Receipt.Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" /></Grid>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

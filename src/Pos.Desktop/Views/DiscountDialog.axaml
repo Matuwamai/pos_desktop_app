@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Pos.Desktop.ViewModels"
+        x:Class="Pos.Desktop.Views.DiscountDialog"
+        x:DataType="vm:DiscountDialogViewModel"
+        Title="Discount" Width="340" Height="280"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="16" Spacing="10">
+    <TextBlock Text="Only a manager or owner can apply a discount." Foreground="Red" TextWrapping="Wrap" IsVisible="{Binding !CanApplyDiscount}" />
+
+    <StackPanel IsVisible="{Binding CanApplyDiscount}" Spacing="10">
+      <TextBlock Text="Amount" />
+      <TextBox Text="{Binding AmountText}" PlaceholderText="0.00" />
+      <TextBlock Text="Reason (optional)" />
+      <TextBox Text="{Binding Reason}" />
+    </StackPanel>
+
+    <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,8,0,0">
+      <Button Grid.Column="0" Content="Remove discount" Command="{Binding RemoveCommand}" />
+      <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" />
+      <Button Grid.Column="3" Content="Apply" Command="{Binding ApplyCommand}" IsVisible="{Binding CanApplyDiscount}" />
+    </Grid>
+  </StackPanel>
+</Window>

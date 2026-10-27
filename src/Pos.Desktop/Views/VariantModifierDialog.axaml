@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Pos.Desktop.ViewModels"
+        x:Class="Pos.Desktop.Views.VariantModifierDialog"
+        x:DataType="vm:VariantModifierDialogViewModel"
+        Title="{Binding ProductName}" Width="420" Height="520"
+        WindowStartupLocation="CenterOwner">
+  <ScrollViewer Padding="16">
+    <StackPanel Spacing="12">
+      <TextBlock Text="{Binding ProductName}" FontSize="18" FontWeight="Bold" />
+
+      <StackPanel IsVisible="{Binding !!Variants.Count}">
+        <TextBlock Text="Size / variant" FontWeight="SemiBold" />
+        <ItemsControl ItemsSource="{Binding Variants}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CatalogVariant">
+              <Button Content="{Binding Sku}" Margin="0,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                      Command="{Binding $parent[ItemsControl].((vm:VariantModifierDialogViewModel)DataContext).SelectVariantCommand}" CommandParameter="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <ItemsControl ItemsSource="{Binding Groups}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ModifierGroupSelectionViewModel">
+            <StackPanel Margin="0,8,0,0">
+              <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Requirement}" Foreground="Gray" FontSize="11" />
+              <ItemsControl ItemsSource="{Binding Options}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ModifierOptionSelectionViewModel">
+                    <ToggleButton Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=OneWay}" Command="{Binding ToggleCommand}" Margin="0,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                      <ToggleButton.Content>
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Grid.Column="0" Text="{Binding Name}" />
+                          <TextBlock Grid.Column="1" Text="{Binding PriceAdjustment, StringFormat='+{0:0.00}'}" IsVisible="{Binding PriceAdjustment}" />
+                        </Grid>
+                      </ToggleButton.Content>
+                    </ToggleButton>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,12,0,0">
+        <TextBlock Grid.Column="0" Text="Qty" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <NumericUpDown Grid.Column="1" Value="{Binding Quantity}" Minimum="1" Width="100" />
+        <TextBlock Grid.Column="3" Text="{Binding PreviewUnitPrice, StringFormat='{}{0:0.00} each'}" VerticalAlignment="Center" FontWeight="Bold" />
+      </Grid>
+
+      <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+        <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" />
+        <Button Grid.Column="2" Content="Add to cart" Command="{Binding ConfirmCommand}" IsEnabled="{Binding CanConfirm}" />
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

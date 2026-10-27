@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Pos.Desktop.ViewModels"
+        x:Class="Pos.Desktop.Views.DrawerOpenDialog"
+        x:DataType="vm:DrawerOpenDialogViewModel"
+        Title="Open the cash drawer" Width="340" Height="220" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="16" Spacing="10">
+    <TextBlock Text="Enter the opening float to start this shift." TextWrapping="Wrap" />
+    <TextBox Text="{Binding OpeningFloatText}" PlaceholderText="0.00" />
+    <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+    <Button Content="Open drawer" Command="{Binding OpenCommand}" HorizontalAlignment="Right" />
+  </StackPanel>
+</Window>

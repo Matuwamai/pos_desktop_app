@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Pos.Desktop.ViewModels"
+        x:Class="Pos.Desktop.Views.PaymentDialog"
+        x:DataType="vm:PaymentDialogViewModel"
+        Title="Payment" Width="420" Height="560"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="16" Spacing="10">
+    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total due" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="{Binding Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" FontSize="18" /></Grid>
+    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Remaining" /><TextBlock Grid.Column="1" Text="{Binding Remaining, StringFormat='{}{0:0.00}'}" /></Grid>
+
+    <ItemsControl ItemsSource="{Binding Lines}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:TenderLineViewModel">
+          <Border Background="#F3F4F6" Padding="8" Margin="0,4">
+            <StackPanel Spacing="4">
+              <ComboBox ItemsSource="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).Methods}" SelectedItem="{Binding Method}" />
+              <TextBox Text="{Binding AmountText}" PlaceholderText="Amount" />
+              <TextBox Text="{Binding TransactionRef}" PlaceholderText="Reference (card/other)" IsVisible="{Binding Method, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=CARD}" />
+              <Button Content="Remove line"
+                      Command="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).RemoveLineCommand}" CommandParameter="{Binding}" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <Button Content="+ Split payment" Command="{Binding AddLineCommand}" HorizontalAlignment="Left" />
+
+    <StackPanel Orientation="Horizontal" Spacing="4">
+      <Button Content="+5" Command="{Binding QuickCashCommand}" CommandParameter="5" />
+      <Button Content="+10" Command="{Binding QuickCashCommand}" CommandParameter="10" />
+      <Button Content="+20" Command="{Binding QuickCashCommand}" CommandParameter="20" />
+      <Button Content="+50" Command="{Binding QuickCashCommand}" CommandParameter="50" />
+    </StackPanel>
+
+    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+      <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" />
+      <Button Grid.Column="2" Content="Complete sale" Command="{Binding SubmitCommand}" IsEnabled="{Binding CanSubmit}" />
+    </Grid>
+  </StackPanel>
+</Window>

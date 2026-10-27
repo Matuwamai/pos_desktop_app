@@ -14,6 +14,7 @@ public sealed class LocalDatabase : IAsyncDisposable
     private static readonly (int Version, string Sql)[] Migrations =
     [
         (Migration0001Init.Version, Migration0001Init.Sql),
+        (Migration0002Sales.Version, Migration0002Sales.Sql),
     ];
 
     private readonly SqliteConnection _connection;
