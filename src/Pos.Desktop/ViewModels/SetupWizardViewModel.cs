@@ -112,7 +112,11 @@ public sealed partial class SetupWizardViewModel : ViewModelBase
         StatusMessage = null;
         try
         {
-            var deviceIdentifier = $"{Environment.MachineName}-{Environment.OSVersion.Platform}";
+            // A persisted id, not derived purely from machine name/OS — see InstallationId
+            // for why: that would collide with the previous install's terminal row on
+            // every re-enrollment from the same physical machine.
+            var installationId = InstallationId.GetOrCreate(Pos.Infra.AppPaths.SecretsDirectory);
+            var deviceIdentifier = $"{Environment.MachineName}-{installationId}";
             // validations/terminal.js: platform is one of 'web' | 'desktop' | 'mobile' —
             // not an OS name; this terminal is always 'desktop'.
             var terminal = await _api.RegisterTerminalAsync(_adminToken, SelectedLocation.Id, TerminalName, deviceIdentifier, "desktop");
