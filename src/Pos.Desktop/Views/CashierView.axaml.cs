@@ -116,6 +116,14 @@ public partial class CashierView : UserControl
             var dialog = new ReceiptDialog(dialogVm);
             await dialog.ShowDialog(Owner!);
         };
+
+        vm.ShowPrinterSettingsDialog = async current =>
+        {
+            var dialogVm = new PrinterSettingsDialogViewModel(GetDb(vm), current);
+            var dialog = new PrinterSettingsDialog(dialogVm);
+            var saved = await dialog.ShowDialog<bool>(Owner!);
+            return saved ? dialogVm.Result : null;
+        };
     }
 
     // CashierViewModel's db/sync/deviceToken fields are private — these small reflection-free

@@ -10,4 +10,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Pinned to exactly the version Avalonia.Skia itself references (checked against
+         the installed package), so NuGet unifies to one SkiaSharp everywhere in the
+         solution rather than risking two native binaries/API surfaces coexisting.
+         MIT-licensed — see LogoRasterConverter.cs for why this is used instead of
+         SixLabors.ImageSharp (whose license requires a paid tier for a commercial app
+         above a revenue threshold). -->
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.14" />
+  </ItemGroup>
+
 </Project>

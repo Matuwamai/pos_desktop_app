@@ -12,7 +12,10 @@
       <StackPanel Spacing="4" x:DataType="vm:ReceiptDialogViewModel">
         <TextBlock Text="{Binding Receipt.TenantName}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Receipt.LocationName}" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding Receipt.TerminalReceiptNo}" HorizontalAlignment="Center" Margin="0,0,0,8" />
+        <TextBlock Text="{Binding Receipt.TerminalReceiptNo}" HorizontalAlignment="Center" Margin="0,0,0,4" />
+        <TextBlock Text="{Binding Receipt.CashierName, StringFormat='Served by {0}'}" Foreground="Gray" FontSize="11" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Receipt.CustomerName, StringFormat='Customer: {0}'}" Foreground="Gray" FontSize="11" HorizontalAlignment="Center"
+                   IsVisible="{Binding Receipt.CustomerName, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,0,0,4" />
 
         <ItemsControl ItemsSource="{Binding Receipt.Lines}">
           <ItemsControl.ItemTemplate>
@@ -20,6 +23,8 @@
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0">
                   <TextBlock Text="{Binding Description}" />
+                  <TextBlock Text="{Binding ModifiersSummary, StringFormat='+ {0}'}" Foreground="Gray" FontSize="11"
+                             IsVisible="{Binding ModifiersSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                   <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" Foreground="Gray" FontSize="11" />
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="{Binding LineTotal, StringFormat='{}{0:0.00}'}" VerticalAlignment="Top" />
@@ -33,6 +38,15 @@
         <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Receipt.DiscountTotal}"><TextBlock Text="Discount" /><TextBlock Grid.Column="1" Text="{Binding Receipt.DiscountTotal, StringFormat='-{0:0.00}'}" /></Grid>
         <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Tax" /><TextBlock Grid.Column="1" Text="{Binding Receipt.TaxTotal, StringFormat='{}{0:0.00}'}" /></Grid>
         <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total" FontWeight="Bold" /><TextBlock Grid.Column="1" Text="{Binding Receipt.Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" /></Grid>
+
+        <Separator Margin="0,8" />
+        <ItemsControl ItemsSource="{Binding Receipt.Payments}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="core:ReceiptPayment">
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Method}" /><TextBlock Grid.Column="1" Text="{Binding Amount, StringFormat='{}{0:0.00}'}" /></Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </StackPanel>
     </ScrollViewer>
   </DockPanel>

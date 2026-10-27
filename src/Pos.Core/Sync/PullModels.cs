@@ -30,6 +30,19 @@ public sealed class PullEntities
     public List<CustomerRow> Customers { get; set; } = [];
     public List<InventoryRow> Inventory { get; set; } = [];
     public List<RosterUserRow> Users { get; set; } = [];
+
+    /// <summary>Singleton, not a list — this terminal's own tenant. Null only if the
+    /// tenant row itself is somehow missing server-side (shouldn't happen in practice).</summary>
+    public TenantRow? Tenant { get; set; }
+}
+
+/// <summary>Always sent in full on every pull (not filtered by "changed since") — one
+/// row, not worth a cursor of its own. See <c>services/sync.js</c>'s comment on why.</summary>
+public sealed class TenantRow
+{
+    public string Name { get; set; } = "";
+    public string? LogoUrl { get; set; }
+    public string UpdatedAt { get; set; } = "";
 }
 
 public sealed class LocationRow

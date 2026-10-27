@@ -9,6 +9,7 @@ using Pos.Core.Interfaces;
 using Pos.Core.Sync;
 using Pos.Infra.Api;
 using Pos.Infra.Auth;
+using Pos.Infra.Printing;
 using Pos.Infra.Sales;
 using Pos.Infra.Storage;
 using Pos.Infra.Sync;
@@ -37,6 +38,10 @@ public sealed partial class CashierViewModel : ViewModelBase
 
     private List<CatalogProduct> _allProducts = [];
     private string? _locationName;
+    private string _tenantName;
+    private byte[]? _tenantLogoBytes;
+    private IReceiptPrinter? _printer;
+    private bool _openDrawerOnCash;
 
     public CashierViewModel(LocalDatabase db, SyncEngine sync, string deviceToken, string terminalId, string locationId, string tenantSubdomain, RosterUser cashier, Action onLogout)
     {
@@ -46,6 +51,7 @@ public sealed partial class CashierViewModel : ViewModelBase
         _deviceToken = deviceToken;
         _locationId = locationId;
         TenantSubdomain = tenantSubdomain;
+        _tenantName = tenantSubdomain; // fallback until LoadTenantAsync replaces it with the real synced name
         SignedInAs = cashier;
         _onLogout = onLogout;
 
@@ -94,11 +100,14 @@ public sealed partial class CashierViewModel : ViewModelBase
     public Func<Task<decimal?>>? ShowDrawerOpenDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerCloseDialog { get; set; }
     public Func<ReceiptDocument, Task>? ShowReceiptDialog { get; set; }
+    public Func<PrinterSettings, Task<PrinterSettings?>>? ShowPrinterSettingsDialog { get; set; }
     public Func<string, Task>? ShowError { get; set; }
 
     public async Task LoadAsync()
     {
         await LoadLocationNameAsync();
+        await LoadTenantAsync();
+        await LoadPrinterAsync();
         await LoadCatalogAsync();
         await LoadHeldTicketsAsync();
         await RefreshPendingCountAsync();
@@ -247,14 +256,32 @@ public sealed partial class CashierViewModel : ViewModelBase
             return;
         }
 
-        if (ShowReceiptDialog is not null)
+        var receipt = new ReceiptDocument(
+            TenantName: _tenantName, LogoImageBytes: _tenantLogoBytes, LocationName: _locationName ?? _locationId,
+            TerminalReceiptNo: result.TerminalReceiptNo, IssuedAt: DateTimeOffset.UtcNow,
+            CashierName: SignedInAs.Name, CustomerName: _cart.CustomerName,
+            Lines: [.. _cart.Items.Select(i => new ReceiptLine(i.ProductName, i.Modifiers.Count == 0 ? null : string.Join(", ", i.Modifiers.Select(m => m.Name)), i.Quantity, i.BaseUnitPrice + i.ModifiersTotal, i.Quantity * (i.BaseUnitPrice + i.ModifiersTotal)))],
+            Subtotal: result.Totals.Subtotal, DiscountTotal: result.Totals.DiscountTotal, TaxTotal: result.Totals.TaxTotal, Total: result.Totals.Total,
+            Payments: [.. payments.Select(p => new ReceiptPayment(p.Method, p.Amount))]);
+
+        // A jammed/unreachable printer must never undo an already-saved sale — caught
+        // and surfaced as a non-blocking message, same reasoning as SaleService's own
+        // "the write always happens regardless of connectivity" design.
+        if (_printer is not null)
         {
-            var receipt = new ReceiptDocument(
-                TenantSubdomain, _locationName ?? _locationId, result.TerminalReceiptNo, DateTimeOffset.UtcNow,
-                [.. _cart.Items.Select(i => new ReceiptLine(i.ProductName, i.Quantity, i.BaseUnitPrice + i.ModifiersTotal, i.Quantity * (i.BaseUnitPrice + i.ModifiersTotal)))],
-                result.Totals.Subtotal, result.Totals.DiscountTotal, result.Totals.TaxTotal, result.Totals.Total);
-            await ShowReceiptDialog(receipt);
+            try
+            {
+                await _printer.PrintAsync(receipt);
+                if (_openDrawerOnCash && payments.Any(p => p.Method == "CASH"))
+                    await _printer.OpenCashDrawerAsync();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Sale completed, but couldn't print: {ex.Message}";
+            }
         }
+
+        if (ShowReceiptDialog is not null) await ShowReceiptDialog(receipt);
 
         _cart = new Cart();
         RefreshCart();
@@ -355,6 +382,39 @@ public sealed partial class CashierViewModel : ViewModelBase
         cmd.CommandText = "SELECT name FROM locations WHERE id = $id";
         cmd.Parameters.AddWithValue("$id", _locationId);
         _locationName = (string?)await cmd.ExecuteScalarAsync();
+    }
+
+    // Falls back to the tenant subdomain (set in the constructor) until the first
+    // successful pull populates the local `tenant` table — see SyncEngine.ApplyAsync/
+    // SyncTenantLogoAsync for how that table and the cached logo file get there.
+    private async Task LoadTenantAsync()
+    {
+        await using var cmd = _db.Connection.CreateCommand();
+        cmd.CommandText = "SELECT name, logo_local_path FROM tenant WHERE id = 'self'";
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!await reader.ReadAsync()) return;
+
+        _tenantName = reader.GetString(0);
+        var logoPath = reader.IsDBNull(1) ? null : reader.GetString(1);
+        _tenantLogoBytes = logoPath is not null && File.Exists(logoPath) ? await File.ReadAllBytesAsync(logoPath) : null;
+    }
+
+    private async Task LoadPrinterAsync()
+    {
+        var settings = await PrinterSettingsStore.LoadAsync(_db);
+        _printer = ReceiptPrinterFactory.Build(settings);
+        _openDrawerOnCash = settings.OpenDrawerOnCash;
+    }
+
+    [RelayCommand]
+    private async Task OpenPrinterSettingsAsync()
+    {
+        if (ShowPrinterSettingsDialog is null) return;
+        var current = await PrinterSettingsStore.LoadAsync(_db);
+        var updated = await ShowPrinterSettingsDialog(current);
+        if (updated is null) return; // cancelled — PrinterSettingsDialogViewModel already persisted on Save, nothing more to do here
+        _printer = ReceiptPrinterFactory.Build(updated);
+        _openDrawerOnCash = updated.OpenDrawerOnCash;
     }
 
     private async Task RefreshPendingCountAsync() => PendingSaleCount = await _sync.GetPendingSaleCountAsync();

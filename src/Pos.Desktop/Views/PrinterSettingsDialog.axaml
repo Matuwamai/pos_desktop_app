@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Pos.Desktop.ViewModels"
+        x:Class="Pos.Desktop.Views.PrinterSettingsDialog"
+        x:DataType="vm:PrinterSettingsDialogViewModel"
+        Title="Printer settings" Width="420" Height="560"
+        WindowStartupLocation="CenterOwner">
+  <ScrollViewer Padding="16">
+    <StackPanel Spacing="8">
+      <TextBlock Text="Transport" FontWeight="Bold" />
+      <ComboBox ItemsSource="{x:Static vm:PrinterSettingsDialogViewModel.TransportOptions}" SelectedItem="{Binding Transport}" HorizontalAlignment="Stretch" />
+
+      <StackPanel IsVisible="{Binding Transport, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=NETWORK}" Spacing="6" Margin="0,8,0,0">
+        <TextBlock Text="Host / IP address" />
+        <TextBox Text="{Binding NetworkHost}" PlaceholderText="192.168.1.50" />
+        <TextBlock Text="Port (default 9100)" />
+        <TextBox Text="{Binding NetworkPort}" />
+      </StackPanel>
+
+      <StackPanel IsVisible="{Binding Transport, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=SERIAL}" Spacing="6" Margin="0,8,0,0">
+        <TextBlock Text="Serial port (e.g. COM3 or /dev/ttyUSB0)" />
+        <TextBox Text="{Binding SerialPortName}" />
+        <TextBlock Text="Baud rate (default 9600)" />
+        <TextBox Text="{Binding SerialBaudRate}" />
+      </StackPanel>
+
+      <StackPanel IsVisible="{Binding Transport, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=SYSTEM}" Spacing="6" Margin="0,8,0,0">
+        <TextBlock Text="System printer name" />
+        <TextBox Text="{Binding SystemPrinterName}" />
+      </StackPanel>
+
+      <TextBlock Text="Characters per line (48 for 80mm, 32 for 58mm)" Margin="0,8,0,0" />
+      <TextBox Text="{Binding CharsPerLine}" />
+
+      <CheckBox Content="Open the drawer automatically on a cash sale" IsChecked="{Binding OpenDrawerOnCash}" Margin="0,8,0,0" />
+
+      <Button Content="Test print" Command="{Binding TestPrintCommand}" IsEnabled="{Binding !IsBusy}" Margin="0,12,0,0" />
+      <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+
+      <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+        <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" />
+        <Button Grid.Column="2" Content="Save" Command="{Binding SaveCommand}" />
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

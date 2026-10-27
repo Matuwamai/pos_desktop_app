@@ -7,7 +7,7 @@
   <DockPanel>
     <!-- Status bar -->
     <Border DockPanel.Dock="Top" Background="#1F2937" Padding="12,8">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
         <Ellipse Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0"
                  Fill="{Binding IsOnline, Converter={x:Static vm:BoolConverters.OnlineColor}}" />
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
@@ -18,8 +18,9 @@
         </StackPanel>
         <TextBlock Grid.Column="2" Text="{Binding SignedInAs.Name}" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0" />
         <Button Grid.Column="3" Content="Sync now" Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}" Margin="0,0,6,0" />
-        <Button Grid.Column="4" Content="Close drawer" Command="{Binding CloseDrawerCommand}" Margin="0,0,6,0" />
-        <Button Grid.Column="5" Content="Lock" Command="{Binding LogoutCommand}" Margin="0,0,6,0" />
+        <Button Grid.Column="4" Content="Printer" Command="{Binding OpenPrinterSettingsCommand}" Margin="0,0,6,0" />
+        <Button Grid.Column="5" Content="Close drawer" Command="{Binding CloseDrawerCommand}" Margin="0,0,6,0" />
+        <Button Grid.Column="6" Content="Lock" Command="{Binding LogoutCommand}" Margin="0,0,6,0" />
       </Grid>
     </Border>
 

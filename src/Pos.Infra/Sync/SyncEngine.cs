@@ -21,6 +21,7 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
 {
     private const string CursorKey = "sync_since";
     private const string LastSyncedKey = "last_synced_at";
+    private const string TenantSingletonId = "self";
 
     public async Task<SyncResult> PullAllAsync(string deviceToken, CancellationToken ct = default)
     {
@@ -31,6 +32,7 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
         {
             last = await api.PullAsync(deviceToken, since, ct: ct);
             await ApplyAsync(last.Entities, ct);
+            if (last.Entities.Tenant is { } tenant) await SyncTenantLogoAsync(tenant, ct);
             since = last.NextSince;
             await SetCursorAsync(since, ct);
             pages++;
@@ -133,6 +135,46 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
             ? errProp.GetString()
             : "The server rejected this customer.";
         return new CustomerCreateResult(false, null, error);
+    }
+
+    /// <summary>
+    /// Runs after <see cref="ApplyAsync"/>'s transaction commits — this does a network
+    /// call, which has no business happening inside an open SQLite write transaction.
+    /// Best-effort: a failure here (offline, 404, whatever) just means printing falls
+    /// back to no logo until the next pull that succeeds, never blocks the pull itself.
+    /// </summary>
+    private async Task SyncTenantLogoAsync(TenantRow tenant, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(tenant.LogoUrl)) return;
+
+        await using (var checkCmd = db.Connection.CreateCommand())
+        {
+            checkCmd.CommandText = "SELECT 1 FROM tenant WHERE id = $id AND logo_url = $url AND logo_local_path IS NOT NULL";
+            checkCmd.Parameters.AddWithValue("$id", TenantSingletonId);
+            checkCmd.Parameters.AddWithValue("$url", tenant.LogoUrl);
+            if (await checkCmd.ExecuteScalarAsync(ct) is not null) return; // already have exactly this logo cached
+        }
+
+        byte[] bytes;
+        try
+        {
+            bytes = await api.DownloadBytesAsync(tenant.LogoUrl, ct);
+        }
+        catch (Exception ex) when (ex is ApiClientException or HttpRequestException or TaskCanceledException or SocketException)
+        {
+            return;
+        }
+
+        var ext = Path.GetExtension(tenant.LogoUrl) is { Length: > 0 } e ? e : ".img";
+        var localPath = Path.Combine(Pos.Infra.AppPaths.DataDirectory, $"logo{ext}");
+        Directory.CreateDirectory(Pos.Infra.AppPaths.DataDirectory);
+        await File.WriteAllBytesAsync(localPath, bytes, ct);
+
+        await using var updateCmd = db.Connection.CreateCommand();
+        updateCmd.CommandText = "UPDATE tenant SET logo_local_path = $path WHERE id = $id";
+        updateCmd.Parameters.AddWithValue("$path", localPath);
+        updateCmd.Parameters.AddWithValue("$id", TenantSingletonId);
+        await updateCmd.ExecuteNonQueryAsync(ct);
     }
 
     /// <summary>Sales not yet confirmed by the server — drives the status bar's pending count.</summary>
@@ -275,6 +317,13 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
             await UpsertAsync(tx, "users", "id",
                 ("id", u.Id), ("name", u.Name), ("role", u.Role), ("permissions_json", System.Text.Json.JsonSerializer.Serialize(u.Permissions)),
                 ("pin_hash", u.PinHash), ("must_change_password", SqlFormat.Bool(u.MustChangePassword)), ("updated_at", u.UpdatedAt));
+
+        // logo_local_path is deliberately NOT in this column list — SyncLogoIfNeededAsync
+        // (run after this transaction commits, since it does a network call) owns that
+        // column separately, so re-upserting the tenant's text fields on every pull never
+        // clobbers an already-cached logo path.
+        if (entities.Tenant is { } tenant)
+            await UpsertAsync(tx, "tenant", "id", ("id", TenantSingletonId), ("name", tenant.Name), ("logo_url", tenant.LogoUrl), ("updated_at", tenant.UpdatedAt));
 
         await tx.CommitAsync(ct);
     }

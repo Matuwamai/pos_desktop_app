@@ -33,6 +33,21 @@ public sealed class ApiClient
     private static void Authorize(HttpRequestMessage request, string bearerToken) =>
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 
+    /// <summary>Downloads an arbitrary file served outside <c>/api/v1/</c> (currently
+    /// just a tenant logo, served statically from <c>/uploads/...</c> — see
+    /// <c>server/app.js</c>). <paramref name="rootRelativePath"/> starting with <c>/</c>
+    /// resolves against this server's origin, not its <c>/api/v1/</c> base — standard
+    /// <see cref="Uri"/> combination rules, same as an absolute-path HTML link. No auth
+    /// header: these assets are served unauthenticated (same as a browser's own
+    /// <c>&lt;img&gt;</c> tag would need).</summary>
+    public async Task<byte[]> DownloadBytesAsync(string rootRelativePath, CancellationToken ct = default)
+    {
+        var url = new Uri(_http.BaseAddress!, rootRelativePath);
+        using var response = await _http.GetAsync(url, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadAsByteArrayAsync(ct);
+    }
+
     // ---- Setup wizard: admin credentials ----
 
     public async Task<LoginResult> LoginAsync(string subdomain, string email, string password, CancellationToken ct = default)
