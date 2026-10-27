@@ -146,6 +146,17 @@ public sealed partial class CashierViewModel : ViewModelBase
     partial void OnSearchTextChanged(string value) => ApplyFilter();
     partial void OnSelectedCategoryIdChanged(string? value) => ApplyFilter();
 
+    /// <summary>
+    /// Ported from <c>CatalogPane.jsx</c>'s <c>handleSearchKeyDown</c>: a barcode scanner
+    /// is just a fast typist followed by Enter into the same search box — there's no
+    /// separate "scan" input or decode step, so Enter auto-adds the sole remaining match.
+    /// </summary>
+    [RelayCommand]
+    private async Task SearchEnterAsync()
+    {
+        if (Products.Count == 1) await PickProductAsync(Products[0]);
+    }
+
     [RelayCommand]
     private async Task PickProductAsync(CatalogProduct product)
     {

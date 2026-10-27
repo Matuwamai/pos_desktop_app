@@ -13,10 +13,11 @@ using Pos.Infra.Sync;
 namespace Pos.Desktop.Views;
 
 /// <summary>
-/// Wires <see cref="CashierViewModel"/>'s <c>Show*</c> hooks to real dialog windows, and
-/// the window-level F2/F4 shortcuts (<c>PosCashierPage.jsx</c>: F2 focuses the catalog
-/// search box, F4 opens payment if the cart isn't empty). This is the one place this
-/// screen touches Avalonia's windowing types directly — the ViewModel never does.
+/// Wires <see cref="CashierViewModel"/>'s <c>Show*</c> hooks to real dialog windows, the
+/// window-level F2/F4 shortcuts, and Enter-in-the-search-box (barcode scan support — see
+/// <c>SearchEnterCommand</c>'s doc comment), all ported from <c>PosCashierPage.jsx</c>.
+/// This is the one place this screen touches Avalonia's windowing types directly — the
+/// ViewModel never does.
 /// </summary>
 public partial class CashierView : UserControl
 {
@@ -25,6 +26,14 @@ public partial class CashierView : UserControl
         InitializeComponent();
         DataContextChanged += (_, _) => WireViewModel();
         AttachedToVisualTree += OnAttachedToVisualTree;
+        SearchBox.KeyDown += OnSearchBoxKeyDown;
+    }
+
+    private void OnSearchBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || DataContext is not CashierViewModel vm) return;
+        if (vm.SearchEnterCommand.CanExecute(null)) vm.SearchEnterCommand.Execute(null);
+        e.Handled = true;
     }
 
     private Window? Owner => TopLevel.GetTopLevel(this) as Window;
