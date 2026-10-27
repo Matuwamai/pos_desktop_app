@@ -75,7 +75,10 @@ public sealed partial class PrinterSettingsDialogViewModel : ViewModelBase
 
             var sample = new ReceiptDocument(
                 TenantName: "Test receipt", LogoImageBytes: null, LocationName: "Printer settings",
-                TerminalReceiptNo: "T-TEST-0001", IssuedAt: DateTimeOffset.Now, CashierName: "—", CustomerName: null,
+                // "Test Cashier", not an em-dash placeholder — EscPosEncoder sanitizes
+                // non-ASCII to '?' (deliberately, see its doc comment), which made this
+                // sample receipt confusingly print "Served by ?" until this fix.
+                TerminalReceiptNo: "T-TEST-0001", IssuedAt: DateTimeOffset.Now, CashierName: "Test Cashier", CustomerName: null,
                 Lines: [new ReceiptLine("Sample item", "+ Sample modifier", 1, 1.00m, 1.00m)],
                 Subtotal: 1.00m, DiscountTotal: 0, TaxTotal: 0, Total: 1.00m,
                 Payments: [new ReceiptPayment("CASH", 1.00m)]);
