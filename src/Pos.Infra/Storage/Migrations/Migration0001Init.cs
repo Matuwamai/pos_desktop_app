@@ -52,7 +52,7 @@ internal static class Migration0001Init
             barcode TEXT,
             attributes_json TEXT,
             price TEXT NOT NULL,
-            cost TEXT NOT NULL,
+            cost TEXT,
             tax_rate_id TEXT,
             is_active INTEGER NOT NULL,
             updated_at TEXT NOT NULL

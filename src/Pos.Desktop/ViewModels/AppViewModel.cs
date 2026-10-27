@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Pos.Infra;
 using Pos.Infra.Api;
@@ -31,6 +32,7 @@ public sealed partial class AppViewModel : ViewModelBase
 
     [ObservableProperty] private AppScreen _screen = AppScreen.Loading;
     [ObservableProperty] private ViewModelBase? _current;
+    [ObservableProperty] private string? _fatalError;
 
     public AppViewModel()
     {
@@ -40,17 +42,29 @@ public sealed partial class AppViewModel : ViewModelBase
 
     public async Task InitializeAsync()
     {
-        var loaded = await _sessionStore.LoadAsync();
-        if (loaded is null)
+        // This whole method runs fire-and-forget from MainWindow's constructor (nothing
+        // to await it against that early) — without this try/catch, any exception here
+        // becomes an unobserved task exception that vanishes silently, leaving Current
+        // null and the window permanently blank with no clue why. FatalError is the one
+        // thing the window can show no matter which screen was (or wasn't) reached.
+        try
         {
-            ShowSetup();
-            return;
-        }
+            var loaded = await _sessionStore.LoadAsync();
+            if (loaded is null)
+            {
+                ShowSetup();
+                return;
+            }
 
-        var (enrollment, deviceToken) = loaded.Value;
-        _deviceToken = deviceToken;
-        await OpenLocalDatabaseAsync(enrollment.ServerUrl, deviceToken);
-        await ShowLockAsync();
+            var (enrollment, deviceToken) = loaded.Value;
+            _deviceToken = deviceToken;
+            await OpenLocalDatabaseAsync(enrollment.ServerUrl, deviceToken);
+            await ShowLockAsync();
+        }
+        catch (Exception ex)
+        {
+            FatalError = ex.ToString();
+        }
     }
 
     private void ShowSetup()
@@ -61,10 +75,19 @@ public sealed partial class AppViewModel : ViewModelBase
 
     private async Task OnEnrolledAsync()
     {
-        var loaded = await _sessionStore.LoadAsync() ?? throw new InvalidOperationException("Enrollment just saved but not found");
-        _deviceToken = loaded.DeviceToken;
-        await OpenLocalDatabaseAsync(loaded.Enrollment.ServerUrl, loaded.DeviceToken);
-        await ShowLockAsync();
+        // Also fire-and-forget (from SetupWizardViewModel's onEnrolled callback) — same
+        // reasoning as InitializeAsync's try/catch.
+        try
+        {
+            var loaded = await _sessionStore.LoadAsync() ?? throw new InvalidOperationException("Enrollment just saved but not found");
+            _deviceToken = loaded.DeviceToken;
+            await OpenLocalDatabaseAsync(loaded.Enrollment.ServerUrl, loaded.DeviceToken);
+            await ShowLockAsync();
+        }
+        catch (Exception ex)
+        {
+            FatalError = ex.ToString();
+        }
     }
 
     private async Task OpenLocalDatabaseAsync(string serverUrl, string deviceToken)
@@ -81,6 +104,24 @@ public sealed partial class AppViewModel : ViewModelBase
     private async Task ShowLockAsync()
     {
         if (_db is null) throw new InvalidOperationException("Local database not open");
+
+        // The roster (and everything else) only exists locally once a pull has run — on
+        // a freshly enrolled device there is nothing to show here otherwise, and the
+        // lock screen is the *only* screen reachable before a PIN unlock, so this is the
+        // one place that first pull can happen. A fresh device therefore needs
+        // connectivity at least once before anyone can sign in — expected, not a bug: a
+        // terminal with no cached roster can't verify anyone's PIN. If this fails (no
+        // network yet), PinVerifier's max-offline-window check reports exactly that
+        // ("terminal has been offline too long") rather than just showing an empty list.
+        try
+        {
+            await _sync!.PullAllAsync(_deviceToken!);
+        }
+        catch (Exception ex) when (ex is ApiClientException or HttpRequestException or TaskCanceledException or SocketException)
+        {
+            // Swallowed deliberately — see comment above.
+        }
+
         var pinVerifier = new PinVerifier(_db, _sync!);
         var lockVm = new LockScreenViewModel(pinVerifier, onUnlocked: user => _ = ShowMainAsync(user));
         await lockVm.LoadUsersAsync();

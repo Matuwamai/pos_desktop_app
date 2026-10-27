@@ -71,7 +71,7 @@ public sealed class VariantRow
     public string? Barcode { get; set; }
     public JsonElement Attributes { get; set; }
     public decimal Price { get; set; }
-    public decimal Cost { get; set; }
+    public decimal? Cost { get; set; } // nullable in the schema too — "for margin reporting", not every variant has one
     public string? TaxRateId { get; set; }
     public bool IsActive { get; set; }
     public string UpdatedAt { get; set; } = "";

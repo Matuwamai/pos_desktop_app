@@ -6,17 +6,32 @@
         x:DataType="vm:AppViewModel"
         Title="POS Terminal"
         Width="1024" Height="700">
-  <ContentControl Content="{Binding Current}">
-    <ContentControl.DataTemplates>
-      <DataTemplate DataType="vm:SetupWizardViewModel">
-        <views:SetupWizardView />
-      </DataTemplate>
-      <DataTemplate DataType="vm:LockScreenViewModel">
-        <views:LockScreenView />
-      </DataTemplate>
-      <DataTemplate DataType="vm:MainViewModel">
-        <views:MainView />
-      </DataTemplate>
-    </ContentControl.DataTemplates>
-  </ContentControl>
+  <Grid>
+    <ContentControl Content="{Binding Current}">
+      <ContentControl.DataTemplates>
+        <DataTemplate DataType="vm:SetupWizardViewModel">
+          <views:SetupWizardView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:LockScreenViewModel">
+          <views:LockScreenView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:MainViewModel">
+          <views:MainView />
+        </DataTemplate>
+      </ContentControl.DataTemplates>
+    </ContentControl>
+
+    <!-- Covers the window whenever startup fails before any screen is reached (see
+         AppViewModel.InitializeAsync) — the alternative is a silent, permanently blank
+         window with no way to tell what went wrong. -->
+    <Border IsVisible="{Binding FatalError, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="#1a0000" Padding="24">
+      <ScrollViewer>
+        <StackPanel Spacing="12">
+          <TextBlock Text="Couldn't start the terminal" FontSize="20" FontWeight="Bold" Foreground="White" />
+          <TextBlock Text="{Binding FatalError}" Foreground="#ff8080" FontFamily="monospace" TextWrapping="Wrap" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
 </Window>

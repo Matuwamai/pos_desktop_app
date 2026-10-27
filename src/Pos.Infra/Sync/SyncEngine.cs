@@ -96,7 +96,7 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
             await UpsertAsync(tx, "variants", "id",
                 ("id", v.Id), ("product_id", v.ProductId), ("sku", v.Sku), ("barcode", v.Barcode),
                 ("attributes_json", v.Attributes.ValueKind == System.Text.Json.JsonValueKind.Undefined ? null : v.Attributes.GetRawText()),
-                ("price", Money(v.Price)), ("cost", Money(v.Cost)), ("tax_rate_id", v.TaxRateId),
+                ("price", Money(v.Price)), ("cost", v.Cost.HasValue ? Money(v.Cost.Value) : null), ("tax_rate_id", v.TaxRateId),
                 ("is_active", Bool(v.IsActive)), ("updated_at", v.UpdatedAt));
 
         foreach (var g in entities.ModifierGroups)

@@ -44,7 +44,10 @@ public sealed class ApiClient
 
     public async Task<List<LocationSummary>> ListLocationsAsync(string adminToken, CancellationToken ct = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "locations?limit=200");
+        // validations/location.js caps this endpoint's limit at 100 — a setup wizard for a
+        // tenant with more locations than that would need real pagination, but that's well
+        // beyond anything Phase 1 needs to handle.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "locations?limit=100");
         Authorize(request, adminToken);
         using var response = await _http.SendAsync(request, ct);
         await EnsureSuccessAsync(response, ct);
