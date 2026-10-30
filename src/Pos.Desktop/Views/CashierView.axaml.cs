@@ -125,6 +125,15 @@ public partial class CashierView : UserControl
             var saved = await dialog.ShowDialog<bool>(Owner!);
             return saved ? dialogVm.Result : null;
         };
+
+        vm.ShowRefundDialog = async () =>
+        {
+            var dialogVm = new RefundLookupDialogViewModel(
+                GetApi(vm), vm.DeviceToken, vm.LocationId, vm.SignedInAs.Id,
+                vm.SignedInAs.Permissions.Contains("orders.refund"), vm.IsOnline);
+            var dialog = new RefundLookupDialog(dialogVm);
+            return await dialog.ShowDialog<bool>(Owner!);
+        };
     }
 
     // CashierViewModel's db/sync/deviceToken fields are private — these small reflection-free

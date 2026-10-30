@@ -159,6 +159,45 @@ public sealed class ApiClient
                ?? throw new ApiClientException("Empty payment-intent response");
     }
 
+    // ---- Refunds (Phase 5) — device token, same as pull/push/payment-intents.
+    // 'orders.create' is NOT reachable this way: a till's own sales only ever go
+    // through PushAsync's order.create outbox path (see authenticateTerminal.js's
+    // TERMINAL_PERMISSIONS, which deliberately omits it). ----
+
+    public async Task<List<OrderSummaryDto>> ListOrdersAsync(string deviceToken, string search, string locationId, CancellationToken ct = default)
+    {
+        var query = $"orders?search={Uri.EscapeDataString(search)}&locationId={Uri.EscapeDataString(locationId)}&limit=20";
+        using var request = new HttpRequestMessage(HttpMethod.Get, query);
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        var page = await response.Content.ReadFromJsonAsync<PagedResult<OrderSummaryDto>>(JsonOptions, ct);
+        return page?.Data ?? [];
+    }
+
+    public async Task<OrderDetailDto> GetOrderAsync(string deviceToken, string orderId, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"orders/{orderId}");
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<OrderDetailDto>(JsonOptions, ct)
+               ?? throw new ApiClientException("Empty order response");
+    }
+
+    public async Task<OrderDetailDto> RefundOrderAsync(string deviceToken, string orderId, RefundRequest body, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"orders/{orderId}/refund")
+        {
+            Content = JsonContent.Create(body, options: JsonOptions),
+        };
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<OrderDetailDto>(JsonOptions, ct)
+               ?? throw new ApiClientException("Empty refund response");
+    }
+
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode) return;
@@ -212,4 +251,84 @@ public sealed class PaymentIntentResult
     public string Status { get; set; } = ""; // PENDING | COMPLETED | FAILED | CANCELLED | TIMEOUT
     public string? ResultDesc { get; set; }
     public string? TransactionRef { get; set; }
+}
+
+public class OrderSummaryDto
+{
+    public string Id { get; set; } = "";
+    public int OrderNumber { get; set; }
+    public string Status { get; set; } = "";
+    public decimal Total { get; set; }
+    public string CreatedAt { get; set; } = "";
+    public CustomerRefDto? Customer { get; set; }
+}
+
+public sealed class OrderDetailDto : OrderSummaryDto
+{
+    public List<OrderItemDto> Items { get; set; } = [];
+    public List<OrderPaymentDto> Payments { get; set; } = [];
+    public List<OrderRefundDto> Refunds { get; set; } = [];
+}
+
+public sealed class CustomerRefDto
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+}
+
+public sealed class OrderItemDto
+{
+    public string Id { get; set; } = ""; // orderItemId, referenced by RefundRequestItem/RefundItemDto
+    public decimal Quantity { get; set; }
+    public decimal LineTotal { get; set; }
+    public VariantRefDto? Variant { get; set; }
+}
+
+public sealed class VariantRefDto
+{
+    public string Sku { get; set; } = "";
+    public ProductRefDto? Product { get; set; }
+}
+
+public sealed class ProductRefDto
+{
+    public string Name { get; set; } = "";
+}
+
+public sealed class OrderPaymentDto
+{
+    public string Method { get; set; } = "";
+    public decimal Amount { get; set; }
+    public string? TransactionRef { get; set; }
+}
+
+public sealed class OrderRefundDto
+{
+    public string Id { get; set; } = "";
+    public decimal TotalAmount { get; set; }
+    public List<RefundItemDto> Items { get; set; } = [];
+}
+
+public sealed class RefundItemDto
+{
+    public string OrderItemId { get; set; } = "";
+    public decimal Quantity { get; set; }
+}
+
+public sealed class RefundRequest
+{
+    public List<RefundRequestItem> Items { get; set; } = [];
+    public string? Reason { get; set; }
+    public string RefundMethod { get; set; } = "CASH";
+    public string? GiftCardCode { get; set; }
+    // Required because a device token has no server-side session user — see
+    // the server's services/order.js refundOrder and controllers/order.js.
+    public string ProcessedByUserId { get; set; } = "";
+}
+
+public sealed class RefundRequestItem
+{
+    public string OrderItemId { get; set; } = "";
+    public decimal Quantity { get; set; }
+    public decimal Amount { get; set; }
 }

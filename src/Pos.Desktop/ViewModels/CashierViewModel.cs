@@ -73,6 +73,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     internal SyncEngine Sync => _sync;
     internal ApiClient Api => _api;
     internal string DeviceToken => _deviceToken;
+    internal string LocationId => _locationId;
 
     public ObservableCollection<CatalogProduct> Products { get; } = [];
     public ObservableCollection<CategoryOption> Categories { get; } = [];
@@ -108,6 +109,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     public Func<ReceiptDocument, Task>? ShowReceiptDialog { get; set; }
     public Func<PrinterSettings, Task<PrinterSettings?>>? ShowPrinterSettingsDialog { get; set; }
     public Func<string, Task>? ShowError { get; set; }
+    public Func<Task<bool>>? ShowRefundDialog { get; set; }
 
     public async Task LoadAsync()
     {
@@ -424,6 +426,14 @@ public sealed partial class CashierViewModel : ViewModelBase
         if (updated is null) return; // cancelled — PrinterSettingsDialogViewModel already persisted on Save, nothing more to do here
         _printer = ReceiptPrinterFactory.Build(updated);
         _openDrawerOnCash = updated.OpenDrawerOnCash;
+    }
+
+    [RelayCommand]
+    private async Task OpenRefundAsync()
+    {
+        if (ShowRefundDialog is null) return;
+        var succeeded = await ShowRefundDialog();
+        if (succeeded) _ = SyncNowAsync(); // best-effort, so the restocked quantity refreshes locally promptly
     }
 
     private async Task RefreshPendingCountAsync() => PendingSaleCount = await _sync.GetPendingSaleCountAsync();
