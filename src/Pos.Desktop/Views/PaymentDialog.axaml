@@ -10,7 +10,7 @@
     <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Remaining" /><TextBlock Grid.Column="1" Text="{Binding Remaining, StringFormat='{}{0:0.00}'}" /></Grid>
 
     <Border Background="#EEF2FF" Padding="8" IsVisible="{Binding HasMpesaLine}">
-      <TextBlock Text="{Binding MpesaHint}" TextWrapping="Wrap" FontSize="12" />
+      <TextBlock Text="{Binding MpesaHint}" Foreground="#1c1917" TextWrapping="Wrap" FontSize="12" />
     </Border>
 
     <ItemsControl ItemsSource="{Binding Lines}">
@@ -27,8 +27,8 @@
                   <Button Content="Send prompt"
                           Command="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).SendStkPushCommand}" CommandParameter="{Binding}" />
                 </StackPanel>
-                <TextBlock Text="Waiting for the customer to approve on their phone…" FontSize="12" IsVisible="{Binding IsSendingStk}" />
-                <TextBlock Text="{Binding StkStatusText}" FontSize="12" Foreground="Red" IsVisible="{Binding HasStkStatus}" />
+                <TextBlock Text="Waiting for the customer to approve on their phone…" Foreground="#1c1917" FontSize="12" IsVisible="{Binding IsSendingStk}" />
+                <TextBlock Text="{Binding StkStatusText}" FontSize="12" Foreground="#dc2626" IsVisible="{Binding HasStkStatus}" />
               </StackPanel>
 
               <TextBox Text="{Binding TransactionRef}" PlaceholderText="M-Pesa confirmation code" IsVisible="{Binding IsMpesa}" />
