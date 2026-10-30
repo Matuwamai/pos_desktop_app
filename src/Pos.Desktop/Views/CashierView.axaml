@@ -62,28 +62,31 @@
         </ScrollViewer>
       </DockPanel>
 
-      <!-- Cart. This whole pane is a deliberately light "card" surface (matching the
-           web app's own light theme), independent of the app shell's dark/light
-           variant — so every TextBlock here gets an explicit ink/muted/danger color
-           rather than the theme's default foreground, which would otherwise go
-           invisible against this fixed-light background under a dark OS theme. -->
-      <DockPanel Grid.Column="1" Margin="8" Background="#F3F4F6">
+      <!-- Cart. No hardcoded light/dark fill here — this pane shares the same
+           theme-driven background as the catalog pane (see App.axaml's
+           RequestedThemeVariant="Default", which follows the OS), so it shifts with
+           the OS theme instead of sitting as a mismatched light/dark island next to
+           it. Text stays on the theme's own default foreground for the same reason;
+           only semantic accents (danger red, muted gray) are ever hardcoded, since
+           those need to read as "warning"/"secondary" consistently in either theme.
+           A subtle neutral border, not a fill, is what visually separates each card. -->
+      <DockPanel Grid.Column="1" Margin="8">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="4">
           <Button Content="Customer" Command="{Binding OpenCustomerCommand}" />
           <Button Content="Discount" Command="{Binding OpenDiscountCommand}" />
           <Button Content="Hold" Command="{Binding HoldTicketCommand}" />
         </StackPanel>
-        <TextBlock DockPanel.Dock="Top" Text="{Binding CustomerName, StringFormat='Customer: {0}'}" Foreground="#1c1917"
+        <TextBlock DockPanel.Dock="Top" Text="{Binding CustomerName, StringFormat='Customer: {0}'}"
                    IsVisible="{Binding CustomerName, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="4" />
 
-        <Border DockPanel.Dock="Top" IsVisible="{Binding HeldTickets.Count}" Background="#E5E7EB" Padding="4" Margin="4">
+        <Border DockPanel.Dock="Top" IsVisible="{Binding HeldTickets.Count}" BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="4" Margin="4">
           <StackPanel>
-            <TextBlock Text="Held tickets" FontWeight="Bold" Foreground="#1c1917" />
+            <TextBlock Text="Held tickets" FontWeight="Bold" />
             <ItemsControl ItemsSource="{Binding HeldTickets}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:HeldTicketSummary">
                   <Grid ColumnDefinitions="*,Auto,Auto">
-                    <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="#1c1917" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" />
                     <Button Grid.Column="1" Content="Resume"
                             Command="{Binding #Root.((vm:CashierViewModel)DataContext).ResumeHeldTicketCommand}" CommandParameter="{Binding Id}" />
                     <Button Grid.Column="2" Content="✕"
@@ -95,12 +98,12 @@
           </StackPanel>
         </Border>
 
-        <Border DockPanel.Dock="Bottom" Background="White" Padding="8">
+        <Border DockPanel.Dock="Bottom" BorderBrush="Gray" BorderThickness="0,1,0,0" Padding="8">
           <StackPanel Spacing="2">
-            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Subtotal" Foreground="#1c1917" /><TextBlock Grid.Column="1" Text="{Binding Subtotal, StringFormat='{}{0:0.00}'}" Foreground="#1c1917" /></Grid>
-            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding DiscountTotal}"><TextBlock Text="Discount" Foreground="#1c1917" /><TextBlock Grid.Column="1" Text="{Binding DiscountTotal, StringFormat='-{0:0.00}'}" Foreground="#dc2626" /></Grid>
-            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Tax" Foreground="#1c1917" /><TextBlock Grid.Column="1" Text="{Binding TaxTotal, StringFormat='{}{0:0.00}'}" Foreground="#1c1917" /></Grid>
-            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total" FontWeight="Bold" FontSize="18" Foreground="#1c1917" /><TextBlock Grid.Column="1" Text="{Binding Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" FontSize="18" Foreground="#1c1917" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Subtotal" /><TextBlock Grid.Column="1" Text="{Binding Subtotal, StringFormat='{}{0:0.00}'}" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding DiscountTotal}"><TextBlock Text="Discount" /><TextBlock Grid.Column="1" Text="{Binding DiscountTotal, StringFormat='-{0:0.00}'}" Foreground="#dc2626" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Tax" /><TextBlock Grid.Column="1" Text="{Binding TaxTotal, StringFormat='{}{0:0.00}'}" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="{Binding Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" FontSize="18" /></Grid>
             <Button Content="Pay (F4)" Command="{Binding PayCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,8,0,0" />
           </StackPanel>
         </Border>
@@ -109,18 +112,18 @@
           <ItemsControl ItemsSource="{Binding CartRows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:CartLineRow">
-                <Border Background="White" Margin="0,2" Padding="6">
+                <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Margin="0,2" Padding="6">
                   <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                     <StackPanel Grid.Column="0">
-                      <TextBlock Text="{Binding ProductName}" FontWeight="Bold" Foreground="#1c1917" />
+                      <TextBlock Text="{Binding ProductName}" FontWeight="Bold" />
                       <TextBlock Text="{Binding ModifiersSummary}" Foreground="#78716c" FontSize="11" IsVisible="{Binding ModifiersSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
                     <Button Grid.Column="1" Content="-"
                             Command="{Binding #Root.((vm:CashierViewModel)DataContext).DecrementLineCommand}" CommandParameter="{Binding Key}" />
-                    <TextBlock Grid.Column="2" Text="{Binding Quantity}" Foreground="#1c1917" VerticalAlignment="Center" Margin="6,0" />
+                    <TextBlock Grid.Column="2" Text="{Binding Quantity}" VerticalAlignment="Center" Margin="6,0" />
                     <Button Grid.Column="3" Content="+"
                             Command="{Binding #Root.((vm:CashierViewModel)DataContext).IncrementLineCommand}" CommandParameter="{Binding Key}" />
-                    <TextBlock Grid.Column="4" Text="{Binding LineTotal, StringFormat='{}{0:0.00}'}" Foreground="#1c1917" VerticalAlignment="Center" Margin="8,0,0,0" Width="60" TextAlignment="Right" />
+                    <TextBlock Grid.Column="4" Text="{Binding LineTotal, StringFormat='{}{0:0.00}'}" VerticalAlignment="Center" Margin="8,0,0,0" Width="60" TextAlignment="Right" />
                   </Grid>
                 </Border>
               </DataTemplate>

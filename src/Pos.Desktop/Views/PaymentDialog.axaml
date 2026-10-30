@@ -9,14 +9,14 @@
     <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total due" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="{Binding Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" FontSize="18" /></Grid>
     <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Remaining" /><TextBlock Grid.Column="1" Text="{Binding Remaining, StringFormat='{}{0:0.00}'}" /></Grid>
 
-    <Border Background="#EEF2FF" Padding="8" IsVisible="{Binding HasMpesaLine}">
-      <TextBlock Text="{Binding MpesaHint}" Foreground="#1c1917" TextWrapping="Wrap" FontSize="12" />
+    <Border BorderBrush="#6366F1" BorderThickness="1" CornerRadius="4" Padding="8" IsVisible="{Binding HasMpesaLine}">
+      <TextBlock Text="{Binding MpesaHint}" TextWrapping="Wrap" FontSize="12" />
     </Border>
 
     <ItemsControl ItemsSource="{Binding Lines}">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="vm:TenderLineViewModel">
-          <Border Background="#F3F4F6" Padding="8" Margin="0,4">
+          <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,4">
             <StackPanel Spacing="4">
               <ComboBox ItemsSource="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).Methods}" SelectedItem="{Binding Method}" />
               <TextBox Text="{Binding AmountText}" PlaceholderText="Amount" />
@@ -27,7 +27,7 @@
                   <Button Content="Send prompt"
                           Command="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).SendStkPushCommand}" CommandParameter="{Binding}" />
                 </StackPanel>
-                <TextBlock Text="Waiting for the customer to approve on their phone…" Foreground="#1c1917" FontSize="12" IsVisible="{Binding IsSendingStk}" />
+                <TextBlock Text="Waiting for the customer to approve on their phone…" FontSize="12" IsVisible="{Binding IsSendingStk}" />
                 <TextBlock Text="{Binding StkStatusText}" FontSize="12" Foreground="#dc2626" IsVisible="{Binding HasStkStatus}" />
               </StackPanel>
 
