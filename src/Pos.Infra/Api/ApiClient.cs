@@ -130,6 +130,35 @@ public sealed class ApiClient
                ?? throw new ApiClientException("Empty push response");
     }
 
+    // ---- M-Pesa STK push (Phase 4b) — device token, same as pull/push ----
+
+    public async Task<PaymentIntentResult> CreatePaymentIntentAsync(string deviceToken, decimal amount, string phoneNumber, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "payment-intents")
+        {
+            Content = JsonContent.Create(new { amount, phoneNumber }, options: JsonOptions),
+        };
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PaymentIntentResult>(JsonOptions, ct)
+               ?? throw new ApiClientException("Empty payment-intent response");
+    }
+
+    // The status endpoint IS the confirmation path — it actively queries Daraja while
+    // still pending, so repeated calls here are how a caller "polls until done," with
+    // no dependency on the server's callback webhook (see the server's
+    // services/mpesaPaymentIntent.js for why that's true).
+    public async Task<PaymentIntentResult> GetPaymentIntentAsync(string deviceToken, string intentId, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"payment-intents/{intentId}");
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PaymentIntentResult>(JsonOptions, ct)
+               ?? throw new ApiClientException("Empty payment-intent response");
+    }
+
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode) return;
@@ -172,4 +201,15 @@ public sealed class EnrollDeviceResult
     public string TerminalId { get; set; } = "";
     public string Token { get; set; } = "";
     public string ExpiresIn { get; set; } = "";
+}
+
+// Shared by both the create (id, status) and status-check (adds resultDesc/
+// transactionRef) responses — fields the other call doesn't return are just left
+// at their default.
+public sealed class PaymentIntentResult
+{
+    public string Id { get; set; } = "";
+    public string Status { get; set; } = ""; // PENDING | COMPLETED | FAILED | CANCELLED | TIMEOUT
+    public string? ResultDesc { get; set; }
+    public string? TransactionRef { get; set; }
 }

@@ -78,9 +78,10 @@ public class HeadlessUiTests
         // Deliberately unreachable — proves the screen renders its (empty-state) catalog
         // and "offline" status without a server, same as a till with no network. No
         // drawer-open dialog is wired, so LoadAsync's drawer gate just opens at float 0.
-        var sync = new SyncEngine(db, ApiClient.ForServer(new Uri("http://127.0.0.1:1")));
+        var api = ApiClient.ForServer(new Uri("http://127.0.0.1:1"));
+        var sync = new SyncEngine(db, api);
         var signedInAs = new RosterUser("user-1", "Jane Cashier", "CASHIER", ["pos.sell"], MustChangePassword: false);
-        var vm = new CashierViewModel(db, sync, deviceToken: "fake-token", terminalId: "terminal-1", locationId: "location-1", tenantSubdomain: "acme", signedInAs, onLogout: () => { });
+        var vm = new CashierViewModel(db, sync, api, deviceToken: "fake-token", terminalId: "terminal-1", locationId: "location-1", tenantSubdomain: "acme", signedInAs, onLogout: () => { });
         await vm.LoadAsync();
         return (vm, tempDir);
     }

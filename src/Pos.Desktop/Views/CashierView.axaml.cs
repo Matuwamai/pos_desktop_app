@@ -7,6 +7,7 @@ using Pos.Core.Domain;
 using Pos.Core.Interfaces;
 using Pos.Core.Sync;
 using Pos.Desktop.ViewModels;
+using Pos.Infra.Api;
 using Pos.Infra.Storage;
 using Pos.Infra.Sync;
 
@@ -86,9 +87,9 @@ public partial class CashierView : UserControl
             return (applied, dialogVm.Result?.Id ?? "", dialogVm.Result?.Name ?? "");
         };
 
-        vm.ShowPaymentDialog = async (total, mpesaType, mpesaShortcode) =>
+        vm.ShowPaymentDialog = async (total, mpesaType, mpesaShortcode, mpesaStkConfigured) =>
         {
-            var dialogVm = new PaymentDialogViewModel(total, mpesaType, mpesaShortcode);
+            var dialogVm = new PaymentDialogViewModel(total, mpesaType, mpesaShortcode, mpesaStkConfigured, GetApi(vm), vm.DeviceToken, vm.IsOnline);
             var dialog = new PaymentDialog(dialogVm);
             await dialog.ShowDialog(Owner!);
             return dialogVm.Result;
@@ -132,5 +133,6 @@ public partial class CashierView : UserControl
     // construction. Exposed as internal properties on CashierViewModel for exactly this.
     private static LocalDatabase GetDb(CashierViewModel vm) => vm.Db;
     private static SyncEngine GetSync(CashierViewModel vm) => vm.Sync;
+    private static ApiClient GetApi(CashierViewModel vm) => vm.Api;
     private static string GetDeviceToken(CashierViewModel vm) => vm.DeviceToken;
 }

@@ -108,6 +108,25 @@ public class SyncEngineTests : IAsyncDisposable
         Assert.Equal("174379", reader.GetString(1));
     }
 
+    [Fact]
+    public async Task Tenant_mpesa_stk_configured_flag_lands_in_the_local_tenant_table()
+    {
+        var handler = new FakeServerHandler(new Queue<(long Since, PullResponse Response)>(
+        [
+            (0L, Page(serverTime: 1_700_000_700, nextSince: 10, hasMore: false,
+                tenant: new TenantRow { Name = "Acme Coffee", MpesaType = "PAYBILL", MpesaShortcode = "174379", MpesaStkConfigured = true, UpdatedAt = "2024-01-05T00:00:00Z" })),
+        ]));
+
+        await using var db = await LocalDatabase.OpenAsync(_dbPath, "test-key-5");
+        var sync = new SyncEngine(db, ApiClientWith(handler));
+        await sync.PullAllAsync("device-token");
+
+        await using var cmd = db.Connection.CreateCommand();
+        cmd.CommandText = "SELECT mpesa_stk_configured FROM tenant WHERE id = 'self'";
+        var value = await cmd.ExecuteScalarAsync();
+        Assert.Equal(1L, Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
     private static ApiClient ApiClientWith(HttpMessageHandler handler)
     {
         var http = new HttpClient(handler) { BaseAddress = new Uri("http://fake-server/api/v1/") };

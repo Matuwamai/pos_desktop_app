@@ -324,7 +324,8 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
         // clobbers an already-cached logo path.
         if (entities.Tenant is { } tenant)
             await UpsertAsync(tx, "tenant", "id", ("id", TenantSingletonId), ("name", tenant.Name), ("logo_url", tenant.LogoUrl),
-                ("mpesa_type", tenant.MpesaType), ("mpesa_shortcode", tenant.MpesaShortcode), ("updated_at", tenant.UpdatedAt));
+                ("mpesa_type", tenant.MpesaType), ("mpesa_shortcode", tenant.MpesaShortcode),
+                ("mpesa_stk_configured", SqlFormat.Bool(tenant.MpesaStkConfigured)), ("updated_at", tenant.UpdatedAt));
 
         await tx.CommitAsync(ct);
     }

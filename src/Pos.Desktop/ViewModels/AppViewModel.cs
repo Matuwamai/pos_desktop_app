@@ -28,6 +28,7 @@ public sealed partial class AppViewModel : ViewModelBase
 
     private LocalDatabase? _db;
     private SyncEngine? _sync;
+    private ApiClient? _api;
     private string? _deviceToken;
     private string? _terminalId;
     private string? _locationId;
@@ -107,7 +108,8 @@ public sealed partial class AppViewModel : ViewModelBase
         // ISecretStore is the more obviously-correct design; revisit before Phase 5
         // if key rotation on revoke needs to be decoupled from re-enrollment.
         _db = await LocalDatabase.OpenAsync(AppPaths.DatabasePath, deviceToken);
-        _sync = new SyncEngine(_db, ApiClient.ForServer(new Uri(serverUrl)));
+        _api = ApiClient.ForServer(new Uri(serverUrl));
+        _sync = new SyncEngine(_db, _api);
     }
 
     private async Task ShowLockAsync()
@@ -140,7 +142,7 @@ public sealed partial class AppViewModel : ViewModelBase
 
     private async Task ShowMainAsync(RosterUser user)
     {
-        var cashierVm = new CashierViewModel(_db!, _sync!, _deviceToken!, _terminalId!, _locationId!, _tenantSubdomain!, user, onLogout: () => _ = ShowLockAsync());
+        var cashierVm = new CashierViewModel(_db!, _sync!, _api!, _deviceToken!, _terminalId!, _locationId!, _tenantSubdomain!, user, onLogout: () => _ = ShowLockAsync());
         // Current is set *before* LoadAsync runs, not after: LoadAsync opens the drawer
         // dialog via CashierView's code-behind-wired Show* hooks, which only get wired
         // once CashierView actually materializes — which happens here, synchronously,

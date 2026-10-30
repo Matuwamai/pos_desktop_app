@@ -44,6 +44,9 @@ public sealed class TenantRow
     public string? LogoUrl { get; set; }
     public string? MpesaType { get; set; } // "TILL" | "PAYBILL" | null (not set up yet)
     public string? MpesaShortcode { get; set; }
+    // Whether the tenant has Daraja credentials configured server-side — never the
+    // credentials themselves, which never cross the sync wire at all.
+    public bool MpesaStkConfigured { get; set; }
     public string UpdatedAt { get; set; } = "";
 }
 

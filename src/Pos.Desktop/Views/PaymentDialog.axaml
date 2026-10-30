@@ -20,6 +20,17 @@
             <StackPanel Spacing="4">
               <ComboBox ItemsSource="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).Methods}" SelectedItem="{Binding Method}" />
               <TextBox Text="{Binding AmountText}" PlaceholderText="Amount" />
+
+              <StackPanel IsVisible="{Binding IsMpesaWithStk}" Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding !IsSendingStk}">
+                  <TextBox Text="{Binding StkPhoneNumber}" PlaceholderText="2547XXXXXXXX" />
+                  <Button Content="Send prompt"
+                          Command="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).SendStkPushCommand}" CommandParameter="{Binding}" />
+                </StackPanel>
+                <TextBlock Text="Waiting for the customer to approve on their phone…" FontSize="12" IsVisible="{Binding IsSendingStk}" />
+                <TextBlock Text="{Binding StkStatusText}" FontSize="12" Foreground="Red" IsVisible="{Binding HasStkStatus}" />
+              </StackPanel>
+
               <TextBox Text="{Binding TransactionRef}" PlaceholderText="M-Pesa confirmation code" IsVisible="{Binding IsMpesa}" />
               <TextBox Text="{Binding TransactionRef}" PlaceholderText="Reference (card/other)" IsVisible="{Binding IsCardOrOther}" />
               <Button Content="Remove line"

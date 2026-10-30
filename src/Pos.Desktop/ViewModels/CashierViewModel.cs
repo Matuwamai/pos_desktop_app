@@ -30,6 +30,7 @@ public sealed partial class CashierViewModel : ViewModelBase
 {
     private readonly LocalDatabase _db;
     private readonly SyncEngine _sync;
+    private readonly ApiClient _api;
     private readonly SaleService _saleService;
     private readonly string _deviceToken;
     private readonly string _locationId;
@@ -42,13 +43,15 @@ public sealed partial class CashierViewModel : ViewModelBase
     private byte[]? _tenantLogoBytes;
     private string? _mpesaType;
     private string? _mpesaShortcode;
+    private bool _mpesaStkConfigured;
     private IReceiptPrinter? _printer;
     private bool _openDrawerOnCash;
 
-    public CashierViewModel(LocalDatabase db, SyncEngine sync, string deviceToken, string terminalId, string locationId, string tenantSubdomain, RosterUser cashier, Action onLogout)
+    public CashierViewModel(LocalDatabase db, SyncEngine sync, ApiClient api, string deviceToken, string terminalId, string locationId, string tenantSubdomain, RosterUser cashier, Action onLogout)
     {
         _db = db;
         _sync = sync;
+        _api = api;
         _saleService = new SaleService(db, terminalId);
         _deviceToken = deviceToken;
         _locationId = locationId;
@@ -68,6 +71,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     // (CustomerDialogViewModel needs db/sync/deviceToken) — see the Show* hooks below.
     internal LocalDatabase Db => _db;
     internal SyncEngine Sync => _sync;
+    internal ApiClient Api => _api;
     internal string DeviceToken => _deviceToken;
 
     public ObservableCollection<CatalogProduct> Products { get; } = [];
@@ -98,7 +102,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     public Func<CatalogProduct, IReadOnlyList<ModifierGroupOptions>, Task<CartLine?>>? ShowVariantPicker { get; set; }
     public Func<string, decimal?, string?, Task<(bool Applied, decimal Amount, string? Reason)>>? ShowDiscountDialog { get; set; }
     public Func<bool, Task<(bool Applied, string Id, string Name)>>? ShowCustomerDialog { get; set; }
-    public Func<decimal, string?, string?, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
+    public Func<decimal, string?, string?, bool, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerOpenDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerCloseDialog { get; set; }
     public Func<ReceiptDocument, Task>? ShowReceiptDialog { get; set; }
@@ -244,7 +248,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     {
         if (ShowPaymentDialog is null) return;
         var totals = _cart.ComputeTotals();
-        var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode);
+        var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode, _mpesaStkConfigured);
         if (payments is null) return;
 
         SaleResult result;
@@ -392,7 +396,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     private async Task LoadTenantAsync()
     {
         await using var cmd = _db.Connection.CreateCommand();
-        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode FROM tenant WHERE id = 'self'";
+        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured FROM tenant WHERE id = 'self'";
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync()) return;
 
@@ -401,6 +405,7 @@ public sealed partial class CashierViewModel : ViewModelBase
         _tenantLogoBytes = logoPath is not null && File.Exists(logoPath) ? await File.ReadAllBytesAsync(logoPath) : null;
         _mpesaType = reader.IsDBNull(2) ? null : reader.GetString(2);
         _mpesaShortcode = reader.IsDBNull(3) ? null : reader.GetString(3);
+        _mpesaStkConfigured = !reader.IsDBNull(4) && reader.GetInt32(4) != 0;
     }
 
     private async Task LoadPrinterAsync()
