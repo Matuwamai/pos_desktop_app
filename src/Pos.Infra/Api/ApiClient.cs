@@ -202,11 +202,32 @@ public sealed class ApiClient
     {
         if (response.IsSuccessStatusCode) return;
         var body = await response.Content.ReadAsStringAsync(ct);
-        throw new ApiClientException($"{(int)response.StatusCode} {response.ReasonPhrase}: {body}");
+        var message = $"{(int)response.StatusCode} {response.ReasonPhrase}: {body}";
+
+        // A 401 on an already-enrolled device is never "retry later" — it's
+        // authenticateTerminal.js's tokenVersion check failing, which only happens on an
+        // explicit revoke, a deactivated terminal/tenant, or the device token's own
+        // 365-day expiry (server/services/terminal.js's DEVICE_TOKEN_TTL). All three have
+        // the same remedy (wipe local state, re-enroll), so this gets its own exception
+        // type rather than forcing every caller to parse the message string.
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new DeviceUnauthorizedException(message);
+
+        throw new ApiClientException(message, response.StatusCode);
     }
 }
 
-public sealed class ApiClientException(string message) : Exception(message);
+public class ApiClientException(string message, System.Net.HttpStatusCode? statusCode = null) : Exception(message)
+{
+    public System.Net.HttpStatusCode? StatusCode { get; } = statusCode;
+}
+
+/// <summary>Thrown specifically for a 401 response once a device is already enrolled —
+/// see <see cref="ApiClient.EnsureSuccessAsync"/>. Callers that care about this
+/// distinction (see <c>AppViewModel.HandleDeviceInvalidAsync</c>) must catch this
+/// subclass before the base <see cref="ApiClientException"/>.</summary>
+public sealed class DeviceUnauthorizedException(string message)
+    : ApiClientException(message, System.Net.HttpStatusCode.Unauthorized);
 
 public sealed class LoginResult
 {

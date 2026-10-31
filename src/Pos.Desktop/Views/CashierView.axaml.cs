@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -134,6 +135,27 @@ public partial class CashierView : UserControl
             var dialog = new RefundLookupDialog(dialogVm);
             return await dialog.ShowDialog<bool>(Owner!);
         };
+
+        vm.OnDeviceInvalid = ex => (Owner as MainWindow)?.AppViewModel.HandleDeviceRevokedAsync(ex) ?? Task.CompletedTask;
+    }
+
+    private void OnOpenLogsFolderClick(object? sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(Pos.Infra.AppPaths.LogsDirectory);
+        OpenFolder(Pos.Infra.AppPaths.LogsDirectory);
+    }
+
+    private void OnRestartToUpdateClick(object? sender, RoutedEventArgs e) =>
+        Pos.Infra.Updates.UpdateChecker.ApplyAndRestart();
+
+    // Same per-OS branch shape Pos.Hardware's SystemPrinterTransport (Phase 3) already
+    // uses for OperatingSystem.IsWindows()-gated behavior, applied here to open a folder
+    // instead of spooling to a printer.
+    private static void OpenFolder(string path)
+    {
+        if (OperatingSystem.IsWindows()) Process.Start("explorer.exe", path);
+        else if (OperatingSystem.IsMacOS()) Process.Start("open", path);
+        else Process.Start("xdg-open", path);
     }
 
     // CashierViewModel's db/sync/deviceToken fields are private — these small reflection-free

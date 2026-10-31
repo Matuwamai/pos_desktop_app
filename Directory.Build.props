@@ -17,6 +17,9 @@
          win-x64/linux-x64/linux-arm64/osx-arm64 are the Phase 5 publish targets. -->
     <InvariantGlobalization>false</InvariantGlobalization>
     <Deterministic>true</Deterministic>
+    <!-- Overridden per-release by release.yml's `-p:Version=<tag-without-v>`; this is
+         just the default for a plain local/CI build. -->
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
 </Project>

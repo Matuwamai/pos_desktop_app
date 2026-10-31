@@ -46,6 +46,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     private bool _mpesaStkConfigured;
     private IReceiptPrinter? _printer;
     private bool _openDrawerOnCash;
+    private bool _deviceInvalidated;
 
     public CashierViewModel(LocalDatabase db, SyncEngine sync, ApiClient api, string deviceToken, string terminalId, string locationId, string tenantSubdomain, RosterUser cashier, Action onLogout)
     {
@@ -110,6 +111,11 @@ public sealed partial class CashierViewModel : ViewModelBase
     public Func<PrinterSettings, Task<PrinterSettings?>>? ShowPrinterSettingsDialog { get; set; }
     public Func<string, Task>? ShowError { get; set; }
     public Func<Task<bool>>? ShowRefundDialog { get; set; }
+    // Fired when a sync call reveals this device's own credential no longer works
+    // (revoked, deactivated, or its 365-day token expired) — the caller (CashierView's
+    // code-behind) resets the app back to Setup via AppViewModel.HandleDeviceInvalidAsync.
+    // Not handled here: this ViewModel has no reference to AppViewModel/the window.
+    public Func<DeviceUnauthorizedException, Task>? OnDeviceInvalid { get; set; }
 
     public async Task LoadAsync()
     {
@@ -147,15 +153,31 @@ public sealed partial class CashierViewModel : ViewModelBase
             IsOnline = true;
             await LoadCatalogAsync(); // pulled prices/stock may have changed
         }
+        catch (DeviceUnauthorizedException ex) when (OnDeviceInvalid is not null)
+        {
+            // Must be caught ahead of the generic ApiClientException branch below — it's
+            // a subclass, and C# matches catch clauses in source order. OnDeviceInvalid
+            // (wired to AppViewModel.HandleDeviceInvalidAsync) disposes the shared _db
+            // connection and replaces Current with the Setup screen — this ViewModel is
+            // effectively dead once it returns, so _deviceInvalidated tells `finally`
+            // below not to touch _db/_sync again.
+            StopBackgroundSync();
+            IsOnline = false;
+            _deviceInvalidated = true;
+            await OnDeviceInvalid(ex);
+        }
         catch (Exception ex) when (ex is ApiClientException or HttpRequestException or TaskCanceledException or SocketException)
         {
             IsOnline = false;
         }
         finally
         {
-            var lastSyncedAt = await _sync.GetLastSyncedAtAsync();
-            SyncStatus = lastSyncedAt is null ? "Not yet synced" : $"Last synced {lastSyncedAt.Value.ToLocalTime():g}";
-            await RefreshPendingCountAsync();
+            if (!_deviceInvalidated)
+            {
+                var lastSyncedAt = await _sync.GetLastSyncedAtAsync();
+                SyncStatus = lastSyncedAt is null ? "Not yet synced" : $"Last synced {lastSyncedAt.Value.ToLocalTime():g}";
+                await RefreshPendingCountAsync();
+            }
             IsSyncing = false;
         }
     }

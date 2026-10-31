@@ -26,6 +26,8 @@
          same hash algorithm the server uses (services/user.js hashPin), never the
          password hash. -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.1" />
+    <!-- UpdateChecker (Updates/) wraps Velopack's UpdateManager/GithubSource. -->
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
 </Project>

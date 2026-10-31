@@ -20,6 +20,13 @@ namespace Pos.Tests;
 /// Bootstraps the headless Avalonia app itself (a static constructor, once per test run)
 /// rather than via Avalonia.Headless.XUnit's [AvaloniaFact]: that package currently pulls in
 /// xunit.v3, which collides with this project's xunit v2 (FactAttribute defined in both).
+///
+/// Every test in this class that touches an Avalonia dispatcher-bound type (constructing
+/// a CashierViewModel, a Window, rendering) does so on the same thread that ran this
+/// static constructor — whatever thread first instantiates this class. A different test
+/// class doing the same from a different thread races Avalonia's dispatcher ownership
+/// ("the calling thread cannot access this object because a different thread owns it"),
+/// so any such test belongs here, not in a separate class.
 /// </summary>
 public class HeadlessUiTests
 {
@@ -67,6 +74,55 @@ public class HeadlessUiTests
         {
             vm.StopBackgroundSync(); // otherwise its 30s DispatcherTimer outlives this test, in the same test process
         }
+    }
+
+    [Fact]
+    public void SyncNowAsync_invokes_OnDeviceInvalid_instead_of_swallowing_a_401()
+    {
+        // Phase 6 regression: a revoked/expired device must surface through
+        // OnDeviceInvalid, not be swallowed as "offline" like every other network
+        // failure. This constructs a real CashierViewModel (its DispatcherTimer is an
+        // Avalonia dispatcher-bound type), so — same reasoning as the test above —
+        // it belongs in this class, on this thread, not a standalone one.
+#pragma warning disable xUnit1031 // intentional: see CashierView_with_catalog_and_cart_renders's comment above
+        var (vm, received) = Task.Run(SetUpRevokedCashierViewModelAsync).GetAwaiter().GetResult();
+#pragma warning restore xUnit1031
+
+        try
+        {
+            Assert.NotNull(received);
+            Assert.False(vm.IsOnline);
+        }
+        finally
+        {
+            vm.StopBackgroundSync();
+        }
+    }
+
+    private static async Task<(CashierViewModel Vm, DeviceUnauthorizedException? Received)> SetUpRevokedCashierViewModelAsync()
+    {
+        var tempDir = CreateTempDir();
+        var db = await LocalDatabase.OpenAsync(Path.Combine(tempDir, "pos.db"), "headless-test-key");
+        var api = new ApiClient(new HttpClient(new AlwaysUnauthorizedHandler()) { BaseAddress = new Uri("http://fake-server/api/v1/") });
+        var sync = new SyncEngine(db, api);
+        var signedInAs = new RosterUser("user-1", "Jane Cashier", "CASHIER", ["pos.sell"], MustChangePassword: false);
+        var vm = new CashierViewModel(db, sync, api, deviceToken: "fake-token", terminalId: "terminal-1", locationId: "location-1", tenantSubdomain: "acme", signedInAs, onLogout: () => { });
+
+        DeviceUnauthorizedException? received = null;
+        vm.OnDeviceInvalid = ex =>
+        {
+            received = ex;
+            return Task.CompletedTask;
+        };
+
+        await vm.SyncNowCommand.ExecuteAsync(null);
+        return (vm, received);
+    }
+
+    private sealed class AlwaysUnauthorizedHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized) { Content = new StringContent("{}") });
     }
 
     private static async Task<(CashierViewModel Vm, string TempDir)> SetUpCashierViewModelAsync()

@@ -33,5 +33,14 @@
         </StackPanel>
       </ScrollViewer>
     </Border>
+
+    <!-- A non-fatal banner (see HandleDeviceInvalidAsync) — unlike FatalError above,
+         this doesn't cover the window: the Setup form underneath is still usable, this
+         is just explaining why the device ended up back here. Docked to the top instead
+         of centered/full-screen for that reason. -->
+    <Border IsVisible="{Binding Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="#78350f" Padding="12" VerticalAlignment="Top">
+      <TextBlock Text="{Binding Notice}" Foreground="#fef3c7" TextWrapping="Wrap" />
+    </Border>
   </Grid>
 </Window>
