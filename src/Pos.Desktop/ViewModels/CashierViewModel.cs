@@ -224,6 +224,14 @@ public sealed partial class CashierViewModel : ViewModelBase
         RefreshCart();
     }
 
+    /// <summary>Sum of cart quantities across this product's variants — drives the
+    /// catalog card's quantity badge. Read-only, no side effects.</summary>
+    public int QuantityInCart(CatalogProduct product)
+    {
+        var variantIds = product.Variants.Select(v => v.VariantId).ToHashSet();
+        return _cart.Items.Where(i => variantIds.Contains(i.VariantId)).Sum(i => i.Quantity);
+    }
+
     [RelayCommand]
     private void IncrementLine(string key) => SetLineQuantity(key, +1);
 

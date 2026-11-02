@@ -3,24 +3,25 @@
         xmlns:vm="using:Pos.Desktop.ViewModels"
         x:Class="Pos.Desktop.Views.DiscountDialog"
         x:DataType="vm:DiscountDialogViewModel"
-        Title="Discount" Width="340" Height="280"
+        Title="Discount" Width="340" Height="290"
         WindowStartupLocation="CenterOwner">
-  <StackPanel Margin="16" Spacing="10">
-    <TextBlock Text="Only a manager or owner can apply a discount." Foreground="Red" TextWrapping="Wrap" IsVisible="{Binding !CanApplyDiscount}" />
+  <StackPanel Margin="20" Spacing="12">
+    <TextBlock Text="Only a manager or owner can apply a discount." Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding !CanApplyDiscount}" />
 
-    <StackPanel IsVisible="{Binding CanApplyDiscount}" Spacing="10">
-      <TextBlock Text="Amount" />
+    <StackPanel IsVisible="{Binding CanApplyDiscount}" Spacing="4">
+      <TextBlock Text="Amount" FontSize="12" Foreground="{StaticResource MutedBrush}" />
       <TextBox Text="{Binding AmountText}" PlaceholderText="0.00" />
-      <TextBlock Text="Reason (optional)" />
+      <TextBlock Text="Reason (optional)" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" />
       <TextBox Text="{Binding Reason}" />
     </StackPanel>
 
-    <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
 
     <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,8,0,0">
       <Button Grid.Column="0" Content="Remove discount" Command="{Binding RemoveCommand}" />
       <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" />
-      <Button Grid.Column="3" Content="Apply" Command="{Binding ApplyCommand}" IsVisible="{Binding CanApplyDiscount}" />
+      <Button Grid.Column="3" Content="Apply" Command="{Binding ApplyCommand}" IsVisible="{Binding CanApplyDiscount}"
+              Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" />
     </Grid>
   </StackPanel>
 </Window>

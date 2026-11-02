@@ -3,37 +3,38 @@
         xmlns:vm="using:Pos.Desktop.ViewModels"
         x:Class="Pos.Desktop.Views.CustomerDialog"
         x:DataType="vm:CustomerDialogViewModel"
-        Title="Customer" Width="380" Height="480"
+        Title="Customer" Width="380" Height="500"
         WindowStartupLocation="CenterOwner">
-  <StackPanel Margin="16" Spacing="8">
+  <StackPanel Margin="20" Spacing="10">
     <TextBox Text="{Binding SearchText}" PlaceholderText="Search by name or phone" />
     <Button Content="Remove attached customer" Command="{Binding DetachCommand}" HorizontalAlignment="Left" />
 
     <ItemsControl ItemsSource="{Binding Results}">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="vm:CustomerSearchResult">
-          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2"
+          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,3" Padding="12,8"
                   Command="{Binding $parent[ItemsControl].((vm:CustomerDialogViewModel)DataContext).AttachCommand}" CommandParameter="{Binding}">
             <StackPanel>
               <TextBlock Text="{Binding Name}" FontWeight="Bold" />
-              <TextBlock Text="{Binding Phone}" Foreground="Gray" FontSize="11" />
+              <TextBlock Text="{Binding Phone}" Foreground="{StaticResource MutedBrush}" FontSize="11" />
             </StackPanel>
           </Button>
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
 
-    <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,12,0,0">
-      <StackPanel Spacing="6">
+    <Border Classes="card" Margin="0,8,0,0">
+      <StackPanel Spacing="8">
         <TextBlock Text="New customer" FontWeight="Bold" />
-        <TextBlock Text="Connect to the network to add a new customer." Foreground="#dc2626" IsVisible="{Binding !IsOnline}" TextWrapping="Wrap" />
+        <TextBlock Text="Connect to the network to add a new customer." Foreground="{StaticResource DangerBrush}" IsVisible="{Binding !IsOnline}" TextWrapping="Wrap" />
         <TextBox Text="{Binding NewName}" PlaceholderText="Name" IsEnabled="{Binding IsOnline}" />
         <TextBox Text="{Binding NewPhone}" PlaceholderText="Phone (optional)" IsEnabled="{Binding IsOnline}" />
-        <Button Content="Create and attach" Command="{Binding CreateCommand}" IsEnabled="{Binding IsOnline}" />
+        <Button Content="Create and attach" Command="{Binding CreateCommand}" IsEnabled="{Binding IsOnline}"
+                Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
       </StackPanel>
     </Border>
 
-    <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
-    <Button Content="Close" Command="{Binding CancelCommand}" HorizontalAlignment="Right" Margin="0,8,0,0" />
+    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+    <Button Content="Close" Command="{Binding CancelCommand}" HorizontalAlignment="Right" Margin="0,4,0,0" />
   </StackPanel>
 </Window>

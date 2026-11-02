@@ -77,6 +77,54 @@ public class HeadlessUiTests
     }
 
     [Fact]
+    public async Task LockScreenView_renders()
+    {
+        var tempDir = CreateTempDir();
+        var db = await LocalDatabase.OpenAsync(Path.Combine(tempDir, "pos.db"), "headless-test-key");
+        SeedOneUser(db);
+        var api = ApiClient.ForServer(new Uri("http://127.0.0.1:1"));
+        var sync = new SyncEngine(db, api);
+        var pinVerifier = new PinVerifier(db, sync);
+        var vm = new LockScreenViewModel(pinVerifier, onUnlocked: _ => { });
+        await vm.LoadUsersAsync();
+
+        var view = new LockScreenView { DataContext = vm };
+        RenderToPng(view, Path.Combine(tempDir, "lock-screen.png"));
+    }
+
+    [Fact]
+    public void PaymentDialog_renders()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new PaymentDialogViewModel(total: 24.30m);
+
+        var view = new PaymentDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog.png"));
+    }
+
+    [Fact]
+    public void RefundLookupDialog_renders()
+    {
+        var tempDir = CreateTempDir();
+        var api = ApiClient.ForServer(new Uri("http://127.0.0.1:1"));
+        var vm = new RefundLookupDialogViewModel(api, deviceToken: "fake-token", locationId: "location-1",
+            processedByUserId: "user-1", hasPermission: true, isOnline: false);
+
+        var view = new RefundLookupDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "refund-lookup-dialog.png"));
+    }
+
+    private static void SeedOneUser(LocalDatabase db)
+    {
+        using var cmd = db.Connection.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO users (id, name, role, permissions_json, pin_hash, must_change_password, updated_at)
+            VALUES ('u1', 'Jane Cashier', 'CASHIER', '[]', NULL, 0, '2024-01-01T00:00:00Z');
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    [Fact]
     public void SyncNowAsync_invokes_OnDeviceInvalid_instead_of_swallowing_a_401()
     {
         // Phase 6 regression: a revoked/expired device must surface through
@@ -156,6 +204,16 @@ public class HeadlessUiTests
     private static void RenderToPng(Control view, string pngPath)
     {
         var window = new Window { Width = 1024, Height = 700, Content = view };
+        RenderWindowToPng(window, pngPath);
+    }
+
+    /// <summary>Every dialog view (PaymentDialog, RefundLookupDialog, etc.) is itself a
+    /// Window, not a UserControl — it can't be wrapped as another Window's Content
+    /// (a Window is already its own top-level), so it's shown directly instead.</summary>
+    private static void RenderDialogToPng(Window dialog, string pngPath) => RenderWindowToPng(dialog, pngPath);
+
+    private static void RenderWindowToPng(Window window, string pngPath)
+    {
         window.Show();
         Dispatcher.UIThread.RunJobs();
 

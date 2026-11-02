@@ -1,0 +1,50 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Global control sizing/rounding — sized for a terminal clicked all day, not a
+       lightly-browsed desktop app, same reasoning as the mobile app's touch-friendly
+       buttons. Plain Setters on the base control types, not template overrides, so
+       these are guaranteed to apply regardless of FluentTheme's internal template
+       details. -->
+
+  <Style Selector="Button">
+    <Setter Property="Padding" Value="14,10" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="CornerRadius" Value="{StaticResource AppCornerRadius}" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="CornerRadius" Value="{StaticResource AppCornerRadius}" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="CornerRadius" Value="{StaticResource AppCornerRadius}" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+
+  <Style Selector="ListBoxItem">
+    <Setter Property="CornerRadius" Value="{StaticResource AppCornerRadius}" />
+    <Setter Property="Padding" Value="8" />
+  </Style>
+
+  <Style Selector="CheckBox">
+    <Setter Property="MinHeight" Value="32" />
+  </Style>
+
+  <Style Selector="ToggleButton">
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="CornerRadius" Value="{StaticResource AppCornerRadius}" />
+  </Style>
+
+  <!-- A bordered, padded, rounded panel — the desktop equivalent of mobile's Card,
+       used for list rows (customer/refund/order search results, payment tender
+       lines) that were previously a bare bottom-border-only Border. -->
+  <Style Selector="Border.card">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderMutedBrush}" />
+    <Setter Property="CornerRadius" Value="{StaticResource AppCornerRadiusLg}" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+</Styles>

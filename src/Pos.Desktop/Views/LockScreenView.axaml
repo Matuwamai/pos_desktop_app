@@ -4,20 +4,53 @@
              xmlns:auth="using:Pos.Infra.Auth"
              x:Class="Pos.Desktop.Views.LockScreenView"
              x:DataType="vm:LockScreenViewModel">
-  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="320">
-    <StackPanel Spacing="12">
-      <TextBlock Text="Who's ringing up?" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" />
-      <ListBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}" Height="140">
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="360">
+    <StackPanel Spacing="16">
+      <TextBlock Text="Who's ringing up?" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
+
+      <!-- Still a ListBox for its built-in SelectedItem binding — only the visual
+           presentation changes: a horizontal row of initial avatars instead of a
+           bare vertical list of names. -->
+      <ListBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}" HorizontalAlignment="Center">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.Styles>
+          <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="CornerRadius" Value="{StaticResource AppCornerRadiusLg}" />
+          </Style>
+        </ListBox.Styles>
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="auth:RosterUser">
-            <TextBlock Text="{Binding Name}" />
+            <StackPanel Spacing="4" Width="84">
+              <Border Width="56" Height="56" CornerRadius="28" HorizontalAlignment="Center"
+                      Background="{StaticResource AccentBrush}">
+                <TextBlock Text="{Binding Name, Converter={x:Static vm:TextConverters.Initial}}"
+                           Foreground="White" FontSize="20" FontWeight="Bold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" TextAlignment="Center"
+                         TextWrapping="Wrap" FontSize="12" />
+            </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
 
-      <TextBox Text="{Binding Pin}" PasswordChar="•" IsReadOnly="True" HorizontalContentAlignment="Center" FontSize="24" />
+      <!-- Read-only dot display, not an editable field — the PIN pad below is the only
+           way to change it. -->
+      <TextBlock Text="{Binding Pin, Converter={x:Static vm:TextConverters.PinDots}}"
+                 FontSize="22" HorizontalAlignment="Center" LetterSpacing="2" />
 
-      <Grid ColumnDefinitions="*,*,*" RowDefinitions="*,*,*,*">
+      <Grid ColumnDefinitions="*,*,*" RowDefinitions="*,*,*,*" RowSpacing="8" ColumnSpacing="8">
+        <Grid.Styles>
+          <Style Selector="Button">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+          </Style>
+        </Grid.Styles>
         <Button Grid.Row="0" Grid.Column="0" Content="1" Command="{Binding AppendDigitCommand}" CommandParameter="1" />
         <Button Grid.Row="0" Grid.Column="1" Content="2" Command="{Binding AppendDigitCommand}" CommandParameter="2" />
         <Button Grid.Row="0" Grid.Column="2" Content="3" Command="{Binding AppendDigitCommand}" CommandParameter="3" />
@@ -29,10 +62,11 @@
         <Button Grid.Row="2" Grid.Column="2" Content="9" Command="{Binding AppendDigitCommand}" CommandParameter="9" />
         <Button Grid.Row="3" Grid.Column="0" Content="⌫" Command="{Binding BackspaceCommand}" />
         <Button Grid.Row="3" Grid.Column="1" Content="0" Command="{Binding AppendDigitCommand}" CommandParameter="0" />
-        <Button Grid.Row="3" Grid.Column="2" Content="Unlock" Command="{Binding UnlockCommand}" IsEnabled="{Binding !IsBusy}" />
+        <Button Grid.Row="3" Grid.Column="2" Content="Unlock" Command="{Binding UnlockCommand}" IsEnabled="{Binding !IsBusy}"
+                Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" />
       </Grid>
 
-      <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" HorizontalAlignment="Center" />
+      <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" HorizontalAlignment="Center" />
     </StackPanel>
   </Grid>
 </UserControl>

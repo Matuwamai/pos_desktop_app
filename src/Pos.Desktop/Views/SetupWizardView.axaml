@@ -4,38 +4,69 @@
              xmlns:api="using:Pos.Infra.Api"
              x:Class="Pos.Desktop.Views.SetupWizardView"
              x:DataType="vm:SetupWizardViewModel">
-  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="420">
-    <StackPanel Spacing="12" IsVisible="{Binding IsConnectStep}">
-      <TextBlock Text="Connect this terminal" FontSize="20" FontWeight="Bold" />
-      <TextBlock Text="Server URL" />
-      <TextBox Text="{Binding ServerUrl}" />
-      <TextBlock Text="Business subdomain" />
-      <TextBox Text="{Binding Subdomain}" />
-      <TextBlock Text="Admin email" />
-      <TextBox Text="{Binding Email}" />
-      <TextBlock Text="Password" />
-      <TextBox Text="{Binding Password}" PasswordChar="•" />
-      <Button Content="Sign in" Command="{Binding LoginCommand}" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Stretch" />
-    </StackPanel>
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="440">
+    <StackPanel Spacing="20">
+      <TextBlock Text="Set up this terminal" FontSize="22" FontWeight="Bold" />
 
-    <StackPanel Spacing="12" IsVisible="{Binding IsChooseLocationStep}">
-      <TextBlock Text="Choose this terminal's location" FontSize="20" FontWeight="Bold" />
-      <ListBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" Height="160">
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="api:LocationSummary">
-            <TextBlock Text="{Binding Name}" />
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-      <Button Content="Next" Command="{Binding ChooseLocationCommand}" HorizontalAlignment="Stretch" />
-    </StackPanel>
+      <!-- 3-step progress strip. Each step is "done" once the wizard has moved past
+           it — IsConnectStep/IsChooseLocationStep/IsRegisterTerminalStep already exist
+           on the ViewModel and fully determine which step is current. -->
+      <Grid ColumnDefinitions="Auto,*,Auto,*,Auto">
+        <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
+                Background="{StaticResource AccentBrush}">
+          <TextBlock Text="1" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <Border Grid.Column="1" Height="2" VerticalAlignment="Center" Margin="4,0"
+                Background="{Binding !IsConnectStep, Converter={x:Static vm:BoolConverters.StepFill}}" />
+        <Border Grid.Column="2" Width="28" Height="28" CornerRadius="14"
+                Background="{Binding !IsConnectStep, Converter={x:Static vm:BoolConverters.StepFill}}">
+          <TextBlock Text="2" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <Border Grid.Column="3" Height="2" VerticalAlignment="Center" Margin="4,0"
+                Background="{Binding IsRegisterTerminalStep, Converter={x:Static vm:BoolConverters.StepFill}}" />
+        <Border Grid.Column="4" Width="28" Height="28" CornerRadius="14"
+                Background="{Binding IsRegisterTerminalStep, Converter={x:Static vm:BoolConverters.StepFill}}">
+          <TextBlock Text="3" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </Grid>
 
-    <StackPanel Spacing="12" IsVisible="{Binding IsRegisterTerminalStep}">
-      <TextBlock Text="Name this terminal" FontSize="20" FontWeight="Bold" />
-      <TextBox Text="{Binding TerminalName}" />
-      <Button Content="Register and enroll" Command="{Binding RegisterAndEnrollCommand}" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Stretch" />
-    </StackPanel>
+      <StackPanel Spacing="10" IsVisible="{Binding IsConnectStep}">
+        <TextBlock Text="Connect" FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Text="Server URL" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+        <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://" />
+        <TextBlock Text="Business subdomain" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+        <TextBox Text="{Binding Subdomain}" />
+        <TextBlock Text="Admin email" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+        <TextBox Text="{Binding Email}" />
+        <TextBlock Text="Password" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+        <TextBox Text="{Binding Password}" PasswordChar="•" />
+        <Button Content="Sign in" Command="{Binding LoginCommand}" IsEnabled="{Binding !IsBusy}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" Margin="0,8,0,0" />
+      </StackPanel>
 
-    <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,12,0,0" />
+      <StackPanel Spacing="10" IsVisible="{Binding IsChooseLocationStep}">
+        <TextBlock Text="Choose this terminal's location" FontSize="16" FontWeight="SemiBold" />
+        <ListBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" Height="180">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="api:LocationSummary">
+              <TextBlock Text="{Binding Name}" Padding="4" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <Button Content="Next" Command="{Binding ChooseLocationCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" />
+      </StackPanel>
+
+      <StackPanel Spacing="10" IsVisible="{Binding IsRegisterTerminalStep}">
+        <TextBlock Text="Name this terminal" FontSize="16" FontWeight="SemiBold" />
+        <TextBox Text="{Binding TerminalName}" PlaceholderText="e.g. Till 1" />
+        <Button Content="Register and enroll" Command="{Binding RegisterAndEnrollCommand}" IsEnabled="{Binding !IsBusy}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" />
+      </StackPanel>
+
+      <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" />
+    </StackPanel>
   </Grid>
 </UserControl>

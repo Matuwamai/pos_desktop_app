@@ -4,32 +4,32 @@
         xmlns:api="using:Pos.Infra.Api"
         x:Class="Pos.Desktop.Views.RefundLookupDialog"
         x:DataType="vm:RefundLookupDialogViewModel"
-        Title="Refunds" Width="480" Height="600"
+        Title="Refunds" Width="500" Height="620"
         WindowStartupLocation="CenterOwner">
-  <StackPanel Margin="16" Spacing="10">
+  <StackPanel Margin="20" Spacing="12">
 
-    <TextBlock Text="Only a manager or owner can process a refund." Foreground="#dc2626" TextWrapping="Wrap" IsVisible="{Binding !HasPermission}" />
-    <TextBlock Text="Connect to the network to process a refund." Foreground="#dc2626" TextWrapping="Wrap" IsVisible="{Binding ShowOfflineMessage}" />
+    <TextBlock Text="Only a manager or owner can process a refund." Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding !HasPermission}" />
+    <TextBlock Text="Connect to the network to process a refund." Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding ShowOfflineMessage}" />
 
     <!-- Search step -->
-    <StackPanel IsVisible="{Binding IsSearchStep}" Spacing="10">
-      <StackPanel IsVisible="{Binding CanRefund}" Spacing="10">
-        <StackPanel Orientation="Horizontal" Spacing="4">
-          <TextBox Text="{Binding SearchText}" PlaceholderText="Order # or customer name" Width="320" />
+    <StackPanel IsVisible="{Binding IsSearchStep}" Spacing="12">
+      <StackPanel IsVisible="{Binding CanRefund}" Spacing="12">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBox Text="{Binding SearchText}" PlaceholderText="Order # or customer name" Width="340" />
           <Button Content="Search" Command="{Binding SearchCommand}" IsEnabled="{Binding !IsBusy}" />
         </StackPanel>
 
         <ItemsControl ItemsSource="{Binding Results}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="api:OrderSummaryDto">
-              <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6" Margin="0,2">
+              <Border Classes="card" Margin="0,3">
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding OrderNumber, StringFormat='#{0}'}" FontWeight="Bold" Margin="0,0,12,0" />
                   <StackPanel Grid.Column="1">
                     <TextBlock Text="{Binding CreatedAt}" FontSize="11" />
-                    <TextBlock Text="{Binding Customer.Name}" FontSize="11" IsVisible="{Binding Customer, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <TextBlock Text="{Binding Customer.Name}" FontSize="11" Foreground="{StaticResource MutedBrush}" IsVisible="{Binding Customer, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   </StackPanel>
-                  <TextBlock Grid.Column="2" Text="{Binding Total, StringFormat='{}{0:0.00}'}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                  <TextBlock Grid.Column="2" Text="{Binding Total, StringFormat='{}{0:0.00}'}" VerticalAlignment="Center" Margin="0,0,12,0" FontWeight="SemiBold" />
                   <Button Grid.Column="3" Content="Refund"
                           Command="{Binding $parent[ItemsControl].((vm:RefundLookupDialogViewModel)DataContext).SelectOrderCommand}" CommandParameter="{Binding}" />
                 </Grid>
@@ -41,7 +41,7 @@
     </StackPanel>
 
     <!-- Refund step -->
-    <StackPanel IsVisible="{Binding !IsSearchStep}" Spacing="10">
+    <StackPanel IsVisible="{Binding !IsSearchStep}" Spacing="12">
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock Text="{Binding SelectedOrder.OrderNumber, StringFormat='Order #{0}'}" FontWeight="Bold" FontSize="16" />
         <TextBlock Grid.Column="1" Text="{Binding SelectedOrder.Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" FontSize="16" />
@@ -50,13 +50,13 @@
       <ItemsControl ItemsSource="{Binding RefundLines}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:RefundLineViewModel">
-            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,4">
-              <StackPanel Spacing="4">
+            <Border Classes="card" Margin="0,4">
+              <StackPanel Spacing="6">
                 <TextBlock Text="{Binding ProductName}" FontWeight="Bold" />
-                <TextBlock Text="{Binding RemainingQty, StringFormat='{}{0} of this item can still be refunded'}" FontSize="11" Foreground="#78716c" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBox Text="{Binding RefundQtyText}" PlaceholderText="Qty to refund" Width="100" />
-                  <TextBlock Text="{Binding RefundAmountPreview, StringFormat='= {0:0.00}'}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding RemainingQty, StringFormat='{}{0} of this item can still be refunded'}" FontSize="11" Foreground="{StaticResource MutedBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBox Text="{Binding RefundQtyText}" PlaceholderText="Qty to refund" Width="110" />
+                  <TextBlock Text="{Binding RefundAmountPreview, StringFormat='= {0:0.00}'}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" />
                 </StackPanel>
               </StackPanel>
             </Border>
@@ -64,30 +64,31 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-      <StackPanel Orientation="Horizontal" Spacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="10">
         <StackPanel>
-          <TextBlock Text="Refund method" FontSize="11" />
+          <TextBlock Text="Refund method" FontSize="11" Foreground="{StaticResource MutedBrush}" />
           <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding RefundMethod}" />
         </StackPanel>
         <StackPanel IsVisible="{Binding IsGiftCard}">
-          <TextBlock Text="Gift card code" FontSize="11" />
+          <TextBlock Text="Gift card code" FontSize="11" Foreground="{StaticResource MutedBrush}" />
           <TextBox Text="{Binding GiftCardCode}" />
         </StackPanel>
       </StackPanel>
 
       <StackPanel>
-        <TextBlock Text="Reason (optional)" FontSize="11" />
+        <TextBlock Text="Reason (optional)" FontSize="11" Foreground="{StaticResource MutedBrush}" />
         <TextBox Text="{Binding Reason}" />
       </StackPanel>
 
-      <StackPanel Orientation="Horizontal" Spacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="10">
         <Button Content="Back to search" Command="{Binding BackToSearchCommand}" />
-        <Button Content="Submit refund" Command="{Binding SubmitRefundCommand}" IsEnabled="{Binding CanSubmitRefund}" />
+        <Button Content="Submit refund" Command="{Binding SubmitRefundCommand}" IsEnabled="{Binding CanSubmitRefund}"
+                Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" />
       </StackPanel>
     </StackPanel>
 
-    <TextBlock Text="{Binding ErrorMessage}" Foreground="#dc2626" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-    <TextBlock Text="{Binding SuccessMessage}" TextWrapping="Wrap" IsVisible="{Binding SuccessMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    <TextBlock Text="{Binding SuccessMessage}" Foreground="{StaticResource SuccessBrush}" TextWrapping="Wrap" IsVisible="{Binding SuccessMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
     <Button Content="Close" Command="{Binding CloseCommand}" HorizontalAlignment="Right" />
   </StackPanel>

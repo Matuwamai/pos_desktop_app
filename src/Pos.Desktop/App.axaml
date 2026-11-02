@@ -4,8 +4,36 @@
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Spacing/radius constants, mirroring the mobile app's AppSpacing/AppRadii,
+                 so every view stops hand-rolling its own Margin/Padding/CornerRadius numbers. -->
+            <x:Double x:Key="SpacingXs">4</x:Double>
+            <x:Double x:Key="SpacingSm">8</x:Double>
+            <x:Double x:Key="SpacingMd">16</x:Double>
+            <x:Double x:Key="SpacingLg">24</x:Double>
+            <CornerRadius x:Key="AppCornerRadius">8</CornerRadius>
+            <CornerRadius x:Key="AppCornerRadiusLg">12</CornerRadius>
+
+            <!-- One semantic palette, used instead of the scattered inline hex colors
+                 (#dc2626, #78716c, #6366F1, #16a34a, #fbbf24, #1F2937, #78350f, #1a0000)
+                 every view previously picked its own version of. Not theme-variant-split —
+                 picked to read clearly against both light and dark backgrounds, same as
+                 mobile's single indigo seed. -->
+            <SolidColorBrush x:Key="AccentBrush">#4F46E5</SolidColorBrush>
+            <SolidColorBrush x:Key="DangerBrush">#DC2626</SolidColorBrush>
+            <SolidColorBrush x:Key="WarningBrush">#D97706</SolidColorBrush>
+            <SolidColorBrush x:Key="SuccessBrush">#16A34A</SolidColorBrush>
+            <SolidColorBrush x:Key="MutedBrush">#78716C</SolidColorBrush>
+            <SolidColorBrush x:Key="BorderMutedBrush">#33808080</SolidColorBrush>
+            <SolidColorBrush x:Key="DangerSurfaceBrush">#2A1414</SolidColorBrush>
+            <SolidColorBrush x:Key="WarningSurfaceBrush">#2A2012</SolidColorBrush>
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <StyleInclude Source="avares://Pos.Desktop/Styles/ControlStyles.axaml" />
     </Application.Styles>
 </Application>
