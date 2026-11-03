@@ -7,10 +7,11 @@ public sealed record PricedLine(decimal UnitPrice, int Quantity, decimal LineSub
 public sealed record OrderTotals(decimal Subtotal, decimal DiscountTotal, decimal TaxTotal, decimal Total);
 
 /// <summary>
-/// A manual discretionary discount (<c>amount</c> given directly) or a promotion-code discount
-/// (percentage/fixed, resolved against the subtotal). The desktop terminal only ever *replays*
-/// an amount the server or the cashier already decided — it never resolves promotion codes
-/// itself (Phase 2: promo codes with usage limits are online-only) — so this takes a plain amount.
+/// A manual discretionary discount or a promotion-code discount (percentage/fixed, resolved
+/// against the subtotal) — either way, pricing math itself only ever *replays* a plain amount
+/// the cashier already applied (for a promo code, previewed live via
+/// <c>ApiClient.GetPromotionByCodeAsync</c> before the discount was applied — see
+/// <c>Cart.DiscountPromotionCode</c>); it never resolves a code itself.
 /// </summary>
 public sealed record DiscountInput(decimal Amount);
 

@@ -103,6 +103,42 @@ public class HeadlessUiTests
     }
 
     [Fact]
+    public void PaymentDialog_offline_hides_gift_card_and_store_credit()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new PaymentDialogViewModel(total: 24.30m, isOnline: false);
+        Assert.DoesNotContain(Pos.Core.Sync.OfflinePaymentMethod.GiftCard, vm.Methods);
+        Assert.DoesNotContain(Pos.Core.Sync.OfflinePaymentMethod.StoreCredit, vm.Methods);
+
+        var view = new PaymentDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog-offline.png"));
+    }
+
+    [Fact]
+    public void PaymentDialog_online_with_gift_card_tender_and_store_credit_balance_renders()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new PaymentDialogViewModel(total: 24.30m, isOnline: true, customerId: "customer-1", customerStoreCreditBalance: 15.50m);
+        Assert.Contains(Pos.Core.Sync.OfflinePaymentMethod.GiftCard, vm.Methods);
+        Assert.Contains(Pos.Core.Sync.OfflinePaymentMethod.StoreCredit, vm.Methods);
+        vm.Lines[0].Method = Pos.Core.Sync.OfflinePaymentMethod.GiftCard; // so the code field is visible in the render
+
+        var view = new PaymentDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog-online-gift-card.png"));
+    }
+
+    [Fact]
+    public void DiscountDialog_promo_mode_renders()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new DiscountDialogViewModel(role: "OWNER", currentAmount: null, currentReason: null, subtotal: 50m, isOnline: true);
+        vm.ShowPromoModeCommand.Execute(null);
+
+        var view = new DiscountDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "discount-dialog-promo.png"));
+    }
+
+    [Fact]
     public void RefundLookupDialog_renders()
     {
         var tempDir = CreateTempDir();

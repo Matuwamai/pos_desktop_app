@@ -159,6 +159,21 @@ public sealed class ApiClient
                ?? throw new ApiClientException("Empty payment-intent response");
     }
 
+    // ---- Promo code preview — device token (authenticateTerminal.js's TERMINAL_PERMISSIONS
+    // grants exactly 'promotions.byCode', nothing else promotion-related). Only ever used
+    // to preview a discount amount live before the cashier applies it; the server
+    // re-validates the promotion is still active/in-window again at sync time regardless. ----
+
+    public async Task<PromotionDto> GetPromotionByCodeAsync(string deviceToken, string code, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"promotions/by-code/{Uri.EscapeDataString(code)}");
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PromotionDto>(JsonOptions, ct)
+               ?? throw new ApiClientException("Empty promotion response");
+    }
+
     // ---- Refunds (Phase 5) — device token, same as pull/push/payment-intents.
     // 'orders.create' is NOT reachable this way: a till's own sales only ever go
     // through PushAsync's order.create outbox path (see authenticateTerminal.js's
@@ -272,6 +287,20 @@ public sealed class PaymentIntentResult
     public string Status { get; set; } = ""; // PENDING | COMPLETED | FAILED | CANCELLED | TIMEOUT
     public string? ResultDesc { get; set; }
     public string? TransactionRef { get; set; }
+}
+
+/// <summary>Matches the Promotion fields <c>GET /promotions/by-code/:code</c> returns —
+/// enough to compute the same preview amount <c>DiscountDialogViewModel</c> shows
+/// before the cashier applies it (server/services/order.js's resolveDiscountInput
+/// computes the real one the same way, as the final authority at sync time).</summary>
+public sealed class PromotionDto
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Code { get; set; } = "";
+    public string Type { get; set; } = ""; // PERCENTAGE | FIXED_AMOUNT | BOGO
+    public decimal Value { get; set; }
+    public decimal? MinSubtotal { get; set; }
 }
 
 public class OrderSummaryDto

@@ -75,6 +75,11 @@ public sealed partial class CashierViewModel : ViewModelBase
     internal ApiClient Api => _api;
     internal string DeviceToken => _deviceToken;
     internal string LocationId => _locationId;
+    // Set by PayAsync (a fresh local-DB read, right before the dialog is shown) so
+    // CashierView's code-behind can pass the attached customer's current store-credit
+    // balance into PaymentDialogViewModel without this ViewModel referencing it directly.
+    internal string? CartCustomerId => _cart.CustomerId;
+    internal decimal? CustomerStoreCreditBalance { get; private set; }
 
     public ObservableCollection<CatalogProduct> Products { get; } = [];
     public ObservableCollection<CategoryOption> Categories { get; } = [];
@@ -102,7 +107,7 @@ public sealed partial class CashierViewModel : ViewModelBase
 
     // Wired by CashierView's code-behind — see the class doc comment.
     public Func<CatalogProduct, IReadOnlyList<ModifierGroupOptions>, Task<CartLine?>>? ShowVariantPicker { get; set; }
-    public Func<string, decimal?, string?, Task<(bool Applied, decimal Amount, string? Reason)>>? ShowDiscountDialog { get; set; }
+    public Func<string, decimal?, string?, decimal, Task<(bool Applied, decimal Amount, string? Reason, string? PromotionCode)>>? ShowDiscountDialog { get; set; }
     public Func<bool, Task<(bool Applied, string Id, string Name)>>? ShowCustomerDialog { get; set; }
     public Func<decimal, string?, string?, bool, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerOpenDialog { get; set; }
@@ -257,10 +262,11 @@ public sealed partial class CashierViewModel : ViewModelBase
     private async Task OpenDiscountAsync()
     {
         if (ShowDiscountDialog is null) return;
-        var (applied, amount, reason) = await ShowDiscountDialog(SignedInAs.Role, _cart.DiscountAmount, _cart.DiscountReason);
+        var subtotal = _cart.ComputeTotals().Subtotal;
+        var (applied, amount, reason, promotionCode) = await ShowDiscountDialog(SignedInAs.Role, _cart.DiscountAmount, _cart.DiscountReason, subtotal);
         if (!applied) return;
         if (amount <= 0) _cart.ClearDiscount();
-        else { _cart.DiscountAmount = amount; _cart.DiscountReason = reason; }
+        else { _cart.DiscountAmount = amount; _cart.DiscountReason = reason; _cart.DiscountPromotionCode = promotionCode; }
         RefreshCart();
     }
 
@@ -280,6 +286,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     {
         if (ShowPaymentDialog is null) return;
         var totals = _cart.ComputeTotals();
+        CustomerStoreCreditBalance = await GetCustomerStoreCreditBalanceAsync(_cart.CustomerId);
         var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode, _mpesaStkConfigured);
         if (payments is null) return;
 
@@ -328,6 +335,18 @@ public sealed partial class CashierViewModel : ViewModelBase
     }
 
     private bool CanPay => _cart.Items.Count > 0;
+
+    // A fresh local-DB read each time, not cached on the Cart — the synced balance can
+    // change between when a customer is attached and when Pay is actually tapped.
+    private async Task<decimal?> GetCustomerStoreCreditBalanceAsync(string? customerId)
+    {
+        if (string.IsNullOrEmpty(customerId)) return null;
+        await using var cmd = _db.Connection.CreateCommand();
+        cmd.CommandText = "SELECT store_credit_balance FROM customers WHERE id = $id";
+        cmd.Parameters.AddWithValue("$id", customerId);
+        var result = await cmd.ExecuteScalarAsync();
+        return result is null or DBNull ? null : Convert.ToDecimal(result, System.Globalization.CultureInfo.InvariantCulture);
+    }
 
     [RelayCommand]
     private async Task HoldTicketAsync()

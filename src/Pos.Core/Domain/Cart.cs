@@ -29,11 +29,12 @@ public sealed class CartLine
 }
 
 /// <summary>
-/// An in-progress sale: lines, an optional attached customer, and at most one discount
-/// (manual amount only — see <c>PricingMath.DiscountInput</c>'s doc comment for why promo
-/// codes aren't resolved here). Pricing always goes through <see cref="PricingMath"/>, the
-/// same decimal port of the server's <c>round2()</c> math that Pos.Core's golden-fixture
-/// tests already prove agrees with the server to the cent.
+/// An in-progress sale: lines, an optional attached customer, and at most one discount —
+/// a concrete <see cref="DiscountAmount"/> either way, whether it came from a manual entry
+/// or (<see cref="DiscountPromotionCode"/> set) a promo code previewed live before the
+/// cashier applied it; nothing here resolves a code itself. Pricing always goes through
+/// <see cref="PricingMath"/>, the same decimal port of the server's <c>round2()</c> math
+/// that Pos.Core's golden-fixture tests already prove agrees with the server to the cent.
 /// </summary>
 public sealed class Cart
 {
@@ -42,6 +43,13 @@ public sealed class Cart
     public string? CustomerName { get; set; }
     public decimal? DiscountAmount { get; set; }
     public string? DiscountReason { get; set; }
+
+    /// <summary>Set only when <see cref="DiscountAmount"/> came from a promo code
+    /// (DiscountDialogViewModel already resolved/previewed the amount live before the
+    /// cashier applied it) — carried through so the server can re-validate the
+    /// promotion is still active/in-window at the moment the sale actually syncs. Null
+    /// for an ordinary manual discount.</summary>
+    public string? DiscountPromotionCode { get; set; }
 
     public void AddOrIncrement(CartLine line)
     {
@@ -67,6 +75,7 @@ public sealed class Cart
     {
         DiscountAmount = null;
         DiscountReason = null;
+        DiscountPromotionCode = null;
     }
 
     public IReadOnlyList<PricedLine> PriceLines() =>
@@ -118,7 +127,7 @@ public sealed class Cart
             CreatedAt = createdAt,
             Items = items,
             Discounts = DiscountAmount.HasValue && DiscountAmount.Value > 0
-                ? [new OfflineOrderDiscount { Amount = DiscountAmount.Value, Reason = DiscountReason }]
+                ? [new OfflineOrderDiscount { Amount = DiscountAmount.Value, Reason = DiscountReason, PromotionCode = DiscountPromotionCode }]
                 : [],
             Payments = [.. payments],
             Subtotal = totals.Subtotal,

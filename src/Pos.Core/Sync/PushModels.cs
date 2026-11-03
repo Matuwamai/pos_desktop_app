@@ -85,15 +85,27 @@ public sealed class OfflineOrderDiscount
 {
     public decimal Amount { get; set; }
     public string? Reason { get; set; }
+
+    /// <summary>Carried alongside <see cref="Amount"/> (never in place of it) purely so the
+    /// server can re-validate the promotion is *still* active/in-window at the moment the
+    /// sale actually syncs — the till already computed <see cref="Amount"/> itself, from a
+    /// live preview, before the cashier applied it. See
+    /// <c>server/services/offlineSync.js</c>'s <c>ORDER_PAYLOAD</c> discount schema.</summary>
+    public string? PromotionCode { get; set; }
 }
 
-/// <summary><c>GIFT_CARD</c>/<c>STORE_CREDIT</c> are rejected by the server for offline sales
-/// (online-only in v1) — only these three are valid here.</summary>
+/// <summary><c>GiftCard</c>/<c>StoreCredit</c> redemption needs a fresh, in-transaction balance
+/// check to avoid double-spending the same card/balance across two offline tills — the server
+/// now does that check at sync time (see <c>server/services/offlineSync.js</c>), but these two
+/// methods are still only ever *offered* to the cashier while the till is currently online
+/// (<c>PaymentDialogViewModel.Methods</c>), the same gating M-Pesa STK push already uses.</summary>
 public static class OfflinePaymentMethod
 {
     public const string Cash = "CASH";
     public const string Card = "CARD";
     public const string Mpesa = "MPESA";
+    public const string GiftCard = "GIFT_CARD";
+    public const string StoreCredit = "STORE_CREDIT";
     public const string Other = "OTHER";
 }
 
@@ -102,6 +114,9 @@ public sealed class OfflineOrderPayment
     public string Method { get; set; } = OfflinePaymentMethod.Cash;
     public decimal Amount { get; set; }
     public string? TransactionRef { get; set; }
+
+    /// <summary>Required by the server when <see cref="Method"/> is <see cref="OfflinePaymentMethod.GiftCard"/>.</summary>
+    public string? GiftCardCode { get; set; }
 }
 
 public sealed class DrawerOpenPayload

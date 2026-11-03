@@ -3,16 +3,42 @@
         xmlns:vm="using:Pos.Desktop.ViewModels"
         x:Class="Pos.Desktop.Views.DiscountDialog"
         x:DataType="vm:DiscountDialogViewModel"
-        Title="Discount" Width="340" Height="290"
+        Title="Discount" Width="380" Height="420"
         WindowStartupLocation="CenterOwner">
   <StackPanel Margin="20" Spacing="12">
     <TextBlock Text="Only a manager or owner can apply a discount." Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding !CanApplyDiscount}" />
 
-    <StackPanel IsVisible="{Binding CanApplyDiscount}" Spacing="4">
+    <StackPanel IsVisible="{Binding CanApplyDiscount}" Spacing="12">
+      <!-- Mode toggle, mirroring the web cashier's "Promo code" / "Manual discount" tabs.
+           Which section is visible below is the main "what mode am I in" signal; the
+           active tab's label is just bolded on top of that, via a plain Classes.Setter
+           style rather than a converter. -->
+      <Grid ColumnDefinitions="*,*">
+        <Grid.Styles>
+          <Style Selector="Button.active">
+            <Setter Property="FontWeight" Value="Bold" />
+          </Style>
+        </Grid.Styles>
+        <Button Grid.Column="0" Content="Promo code" Command="{Binding ShowPromoModeCommand}"
+                Classes.active="{Binding UsePromoCode}" />
+        <Button Grid.Column="1" Content="Manual discount" Command="{Binding ShowManualModeCommand}"
+                Classes.active="{Binding !UsePromoCode}" />
+      </Grid>
+
+      <StackPanel IsVisible="{Binding UsePromoCode}" Spacing="6">
+        <TextBlock Text="Code" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Grid.Column="0" Text="{Binding PromoCodeText}" PlaceholderText="SUMMER10" />
+          <Button Grid.Column="1" Content="Look up" Command="{Binding LookupPromoCommand}" IsEnabled="{Binding !IsBusy}" Margin="6,0,0,0" />
+        </Grid>
+        <TextBlock Text="Connect to the network to look up a promo code." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding !IsOnline}" />
+        <TextBlock Text="{Binding PromoPreviewLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" TextWrapping="Wrap" IsVisible="{Binding PromoPreviewLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      </StackPanel>
+
       <TextBlock Text="Amount" FontSize="12" Foreground="{StaticResource MutedBrush}" />
       <TextBox Text="{Binding AmountText}" PlaceholderText="0.00" />
-      <TextBlock Text="Reason (optional)" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" />
-      <TextBox Text="{Binding Reason}" />
+      <TextBlock Text="Reason (optional)" FontSize="12" Foreground="{StaticResource MutedBrush}" IsVisible="{Binding !UsePromoCode}" />
+      <TextBox Text="{Binding Reason}" IsVisible="{Binding !UsePromoCode}" />
     </StackPanel>
 
     <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />

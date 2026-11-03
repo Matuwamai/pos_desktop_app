@@ -10,10 +10,10 @@ using Pos.Infra.Api;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>One tender line. Gift card / store credit aren't offered here — see the
-/// Phase 2 plan's decision #5: those (and real card/mobile-money charging) are
-/// deferred, not wired at all this pass. <c>CARD</c>/<c>OTHER</c> just record a
-/// reference, matching what <c>OfflinePaymentMethod</c> already allows offline.</summary>
+/// <summary>One tender line. <c>CARD</c>/<c>OTHER</c> just record a reference.
+/// <c>GIFT_CARD</c> additionally needs <see cref="GiftCardCode"/> — the server checks
+/// and decrements its balance atomically at sync time (<c>offlineSync.js</c>'s
+/// <c>importOfflineOrder</c>), so a stale local balance is never trusted here.</summary>
 public sealed partial class TenderLineViewModel : ViewModelBase
 {
     private readonly bool _showStkOption;
@@ -28,9 +28,12 @@ public sealed partial class TenderLineViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsMpesa))]
     [NotifyPropertyChangedFor(nameof(IsCardOrOther))]
     [NotifyPropertyChangedFor(nameof(IsMpesaWithStk))]
+    [NotifyPropertyChangedFor(nameof(IsGiftCard))]
+    [NotifyPropertyChangedFor(nameof(IsStoreCredit))]
     [ObservableProperty] private string _method;
     [ObservableProperty] private string _amountText = "";
     [ObservableProperty] private string _transactionRef = "";
+    [ObservableProperty] private string _giftCardCode = "";
 
     // The "Send prompt" sub-flow, shown alongside (never instead of) the manual
     // confirmation-code field above — whichever fills in TransactionRef first is
@@ -46,24 +49,37 @@ public sealed partial class TenderLineViewModel : ViewModelBase
     public bool IsMpesa => Method == Pos.Core.Sync.OfflinePaymentMethod.Mpesa;
     public bool IsCardOrOther => Method == Pos.Core.Sync.OfflinePaymentMethod.Card || Method == Pos.Core.Sync.OfflinePaymentMethod.Other;
     public bool IsMpesaWithStk => IsMpesa && _showStkOption;
+    public bool IsGiftCard => Method == Pos.Core.Sync.OfflinePaymentMethod.GiftCard;
+    public bool IsStoreCredit => Method == Pos.Core.Sync.OfflinePaymentMethod.StoreCredit;
 }
 
 /// <summary>
 /// Payment entry, ported from <c>PaymentModal.jsx</c>: split tenders, quick-cash buttons,
-/// submit once the tendered total covers the sale. The methods offered
-/// (<see cref="Methods"/>) are deliberately narrower than the web app's — see
-/// <see cref="TenderLineViewModel"/>'s doc comment.
+/// submit once the tendered total covers the sale. Gift card and store credit are only
+/// ever offered while <see cref="IsOnline"/> (same gating M-Pesa STK push already uses) —
+/// not because this dialog talks to the server for them (it doesn't; they queue through
+/// the same offline-sync outbox as every other tender), but because redeeming either one
+/// needs a fresh, in-transaction balance check the server can only do once the sale
+/// actually syncs, and that should happen promptly, not sit queued indefinitely.
 /// </summary>
 public sealed partial class PaymentDialogViewModel : ViewModelBase
 {
     // Instance property, not static: Avalonia's {Binding} only resolves against the
     // DataContext instance, not static members (those need {x:Static}) — simpler to
     // make this an instance property than to switch every binding site to x:Static.
-    public string[] Methods { get; } =
-        [OfflinePaymentMethod.Cash, OfflinePaymentMethod.Card, OfflinePaymentMethod.Mpesa, OfflinePaymentMethod.Other];
+    public string[] Methods { get; }
 
     private readonly ApiClient? _api;
     private readonly string? _deviceToken;
+
+    public bool IsOnline { get; }
+    public string? CustomerId { get; }
+
+    /// <summary>Informational only, same as the web cashier's cart-pane display — not
+    /// enforced client-side as a hard cap. The server is the actual authority on the
+    /// customer's current balance at the moment the sale syncs.</summary>
+    public decimal? CustomerStoreCreditBalance { get; }
+    public bool ShowStoreCreditBalance => CustomerStoreCreditBalance is > 0;
 
     // STK push needs a live round-trip to the server — unlike every other tender
     // here, which never leaves the local SQLite write path (see SaleService). Only
@@ -71,7 +87,8 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
     // otherwise the manual confirmation-code field is the only option, same as
     // before this existed.
     public PaymentDialogViewModel(decimal total, string? mpesaType = null, string? mpesaShortcode = null,
-        bool mpesaStkConfigured = false, ApiClient? api = null, string? deviceToken = null, bool isOnline = false)
+        bool mpesaStkConfigured = false, ApiClient? api = null, string? deviceToken = null, bool isOnline = false,
+        string? customerId = null, decimal? customerStoreCreditBalance = null)
     {
         Total = total;
         MpesaShortcode = mpesaShortcode;
@@ -79,8 +96,16 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
             ? "M-Pesa isn't set up yet — add a till/paybill number in Business Settings."
             : $"Have the customer pay {(mpesaType == "PAYBILL" ? "Paybill" : "Till")} number {mpesaShortcode}, then enter the confirmation code below.";
         ShowStkOption = mpesaStkConfigured && isOnline;
+        IsOnline = isOnline;
+        CustomerId = customerId;
+        CustomerStoreCreditBalance = customerStoreCreditBalance;
         _api = api;
         _deviceToken = deviceToken;
+
+        Methods = isOnline
+            ? [OfflinePaymentMethod.Cash, OfflinePaymentMethod.Card, OfflinePaymentMethod.Mpesa, OfflinePaymentMethod.GiftCard, OfflinePaymentMethod.StoreCredit, OfflinePaymentMethod.Other]
+            : [OfflinePaymentMethod.Cash, OfflinePaymentMethod.Card, OfflinePaymentMethod.Mpesa, OfflinePaymentMethod.Other];
+
         AddLineInternal(OfflinePaymentMethod.Cash, total);
     }
 
@@ -112,7 +137,10 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
     public decimal Tendered => Lines.Sum(l => l.Amount);
     public decimal Remaining => Math.Round(Total - Tendered, 2);
     public bool CanSubmit => Remaining <= 0.001m && Lines.Count > 0 &&
-        Lines.All(l => l.Amount > 0 && (l.Method != OfflinePaymentMethod.Mpesa || !string.IsNullOrWhiteSpace(l.TransactionRef)));
+        Lines.All(l => l.Amount > 0
+            && (l.Method != OfflinePaymentMethod.Mpesa || !string.IsNullOrWhiteSpace(l.TransactionRef))
+            && (l.Method != OfflinePaymentMethod.GiftCard || !string.IsNullOrWhiteSpace(l.GiftCardCode))
+            && (l.Method != OfflinePaymentMethod.StoreCredit || !string.IsNullOrWhiteSpace(CustomerId)));
 
     public IReadOnlyList<OfflineOrderPayment>? Result { get; private set; }
     public Action<bool>? RequestClose { get; set; }
@@ -153,6 +181,7 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
             Method = l.Method,
             Amount = l.Amount,
             TransactionRef = string.IsNullOrWhiteSpace(l.TransactionRef) ? null : l.TransactionRef,
+            GiftCardCode = string.IsNullOrWhiteSpace(l.GiftCardCode) ? null : l.GiftCardCode,
         })];
         RequestClose?.Invoke(true);
     }

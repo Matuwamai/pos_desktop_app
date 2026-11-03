@@ -72,12 +72,12 @@ public partial class CashierView : UserControl
             return dialogVm.Result;
         };
 
-        vm.ShowDiscountDialog = async (role, amount, reason) =>
+        vm.ShowDiscountDialog = async (role, amount, reason, subtotal) =>
         {
-            var dialogVm = new DiscountDialogViewModel(role, amount, reason);
+            var dialogVm = new DiscountDialogViewModel(role, amount, reason, subtotal, GetApi(vm), vm.DeviceToken, vm.IsOnline);
             var dialog = new DiscountDialog(dialogVm);
             var applied = await dialog.ShowDialog<bool>(Owner!);
-            return (applied, dialogVm.ResultAmount ?? 0, dialogVm.ResultReason);
+            return (applied, dialogVm.ResultAmount ?? 0, dialogVm.ResultReason, dialogVm.ResultPromotionCode);
         };
 
         vm.ShowCustomerDialog = async isOnline =>
@@ -90,7 +90,8 @@ public partial class CashierView : UserControl
 
         vm.ShowPaymentDialog = async (total, mpesaType, mpesaShortcode, mpesaStkConfigured) =>
         {
-            var dialogVm = new PaymentDialogViewModel(total, mpesaType, mpesaShortcode, mpesaStkConfigured, GetApi(vm), vm.DeviceToken, vm.IsOnline);
+            var dialogVm = new PaymentDialogViewModel(total, mpesaType, mpesaShortcode, mpesaStkConfigured, GetApi(vm), vm.DeviceToken, vm.IsOnline,
+                vm.CartCustomerId, vm.CustomerStoreCreditBalance);
             var dialog = new PaymentDialog(dialogVm);
             await dialog.ShowDialog(Owner!);
             return dialogVm.Result;
