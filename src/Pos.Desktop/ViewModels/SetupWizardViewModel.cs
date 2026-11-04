@@ -6,11 +6,7 @@ using Pos.Infra.Secrets;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>
-/// Setup wizard steps, per the Phase 1 plan: server URL → admin login → choose
-/// location → register + enroll this terminal. Each step's command only enables once
-/// the previous one succeeded, so the view can just bind buttons to CanExecute.
-/// </summary>
+
 public enum SetupStep
 {
     Connect,
@@ -112,9 +108,7 @@ public sealed partial class SetupWizardViewModel : ViewModelBase
         StatusMessage = null;
         try
         {
-            // A persisted id, not derived purely from machine name/OS — see InstallationId
-            // for why: that would collide with the previous install's terminal row on
-            // every re-enrollment from the same physical machine.
+
             var installationId = InstallationId.GetOrCreate(Pos.Infra.AppPaths.SecretsDirectory);
             var deviceIdentifier = $"{Environment.MachineName}-{installationId}";
             // validations/terminal.js: platform is one of 'web' | 'desktop' | 'mobile' —

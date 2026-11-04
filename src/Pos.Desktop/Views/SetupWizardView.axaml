@@ -8,9 +8,6 @@
     <StackPanel Spacing="20">
       <TextBlock Text="Set up this terminal" FontSize="22" FontWeight="Bold" />
 
-      <!-- 3-step progress strip. Each step is "done" once the wizard has moved past
-           it — IsConnectStep/IsChooseLocationStep/IsRegisterTerminalStep already exist
-           on the ViewModel and fully determine which step is current. -->
       <Grid ColumnDefinitions="Auto,*,Auto,*,Auto">
         <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
                 Background="{StaticResource AccentBrush}">

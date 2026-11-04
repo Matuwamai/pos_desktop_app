@@ -8,12 +8,7 @@ namespace Pos.Desktop.ViewModels;
 
 public sealed record CustomerSearchResult(string Id, string Name, string? Phone);
 
-/// <summary>
-/// Search the locally-synced <c>customers</c> table and attach one to the cart, or
-/// create a new one — which needs the server, always (see
-/// <c>SyncEngine.CreateCustomerAsync</c>'s doc comment: customer creation is online-only
-/// in v1, pushed synchronously rather than queued through the outbox like a sale).
-/// </summary>
+
 public sealed partial class CustomerDialogViewModel : ViewModelBase
 {
     private readonly LocalDatabase _db;

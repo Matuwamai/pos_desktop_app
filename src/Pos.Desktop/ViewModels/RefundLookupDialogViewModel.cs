@@ -4,23 +4,25 @@ using System.Net.Http;
 using System.Net.Sockets;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Pos.Core.Pricing;
 using Pos.Infra.Api;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>One refundable line on the selected order. <see cref="RemainingQty"/>
-/// already accounts for any refunds processed elsewhere (e.g. the web app) between
-/// the sale and now, since it's computed from the live <see cref="OrderDetailDto"/>
-/// just fetched, not a cached figure.</summary>
 public sealed partial class RefundLineViewModel : ViewModelBase
 {
-    public RefundLineViewModel(string orderItemId, string productName, decimal soldQty, decimal alreadyRefundedQty, decimal lineTotal)
+    private readonly int _decimalDigits;
+    private readonly string _moneyFormat;
+
+    public RefundLineViewModel(string orderItemId, string productName, decimal soldQty, decimal alreadyRefundedQty, decimal lineTotal, string currency = "USD")
     {
         OrderItemId = orderItemId;
         ProductName = productName;
         SoldQty = soldQty;
         AlreadyRefundedQty = alreadyRefundedQty;
         LineTotal = lineTotal;
+        _decimalDigits = CurrencyInfo.GetDecimalDigits(currency);
+        _moneyFormat = _decimalDigits == 0 ? "0" : "0." + new string('0', _decimalDigits);
     }
 
     public string OrderItemId { get; }
@@ -28,10 +30,12 @@ public sealed partial class RefundLineViewModel : ViewModelBase
     public decimal SoldQty { get; }
     public decimal AlreadyRefundedQty { get; }
     public decimal LineTotal { get; }
+    public string LineTotalText => LineTotal.ToString(_moneyFormat, CultureInfo.InvariantCulture);
     public decimal RemainingQty => SoldQty - AlreadyRefundedQty;
 
     [NotifyPropertyChangedFor(nameof(RefundQty))]
     [NotifyPropertyChangedFor(nameof(RefundAmountPreview))]
+    [NotifyPropertyChangedFor(nameof(RefundAmountPreviewText))]
     [ObservableProperty] private string _refundQtyText = "";
 
     public decimal RefundQty
@@ -45,20 +49,10 @@ public sealed partial class RefundLineViewModel : ViewModelBase
 
     // Proportional to the line's original total, same formula the web app's
     // RefundModal.jsx already uses — not re-derived from current catalog pricing.
-    public decimal RefundAmountPreview => SoldQty > 0 ? Math.Round(RefundQty * (LineTotal / SoldQty), 2) : 0;
+    public decimal RefundAmountPreview => SoldQty > 0 ? Money.Round(RefundQty * (LineTotal / SoldQty), _decimalDigits) : 0;
+    public string RefundAmountPreviewText => RefundAmountPreview.ToString(_moneyFormat, CultureInfo.InvariantCulture);
 }
 
-/// <summary>
-/// Look up a past order (server-side search, scoped to this till's own location —
-/// not the local SQLite cache, which only ever has this terminal's own sales) and
-/// refund it, reusing the server's existing refund logic untouched. One window,
-/// two in-window steps (search → refund form), same multi-step-in-one-window shape
-/// <see cref="SetupWizardViewModel"/> already uses. Gated on both the signed-in
-/// cashier's actual role permission and connectivity — the device token's own grant
-/// is a capability, not the cashier's role, so the till must enforce that itself
-/// (same reasoning as <see cref="DiscountDialogViewModel"/>'s role gate; same
-/// blocking-message-instead-of-the-form UI shape, not a disabled button).
-/// </summary>
 public sealed partial class RefundLookupDialogViewModel : ViewModelBase
 {
     private readonly ApiClient _api;
@@ -83,8 +77,7 @@ public sealed partial class RefundLookupDialogViewModel : ViewModelBase
     public bool HasPermission { get; }
     public bool IsOnline { get; }
     public bool CanRefund => HasPermission && IsOnline;
-    // Only shown once permission is confirmed fine — otherwise the permission
-    // message above already explains why the form is blocked.
+
     public bool ShowOfflineMessage => HasPermission && !IsOnline;
 
     public ObservableCollection<OrderSummaryDto> Results { get; } = [];
@@ -153,7 +146,7 @@ public sealed partial class RefundLookupDialogViewModel : ViewModelBase
             {
                 var productName = item.Variant?.Product?.Name ?? item.Variant?.Sku ?? "Item";
                 var alreadyRefunded = refundedByItem.GetValueOrDefault(item.Id, 0);
-                var line = new RefundLineViewModel(item.Id, productName, item.Quantity, alreadyRefunded, item.LineTotal);
+                var line = new RefundLineViewModel(item.Id, productName, item.Quantity, alreadyRefunded, item.LineTotal, order.Currency);
                 line.PropertyChanged += (_, _) => OnPropertyChanged(nameof(CanSubmitRefund));
                 RefundLines.Add(line);
             }

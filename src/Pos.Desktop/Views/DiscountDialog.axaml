@@ -9,10 +9,6 @@
     <TextBlock Text="Only a manager or owner can apply a discount." Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding !CanApplyDiscount}" />
 
     <StackPanel IsVisible="{Binding CanApplyDiscount}" Spacing="12">
-      <!-- Mode toggle, mirroring the web cashier's "Promo code" / "Manual discount" tabs.
-           Which section is visible below is the main "what mode am I in" signal; the
-           active tab's label is just bolded on top of that, via a plain Classes.Setter
-           style rather than a converter. -->
       <Grid ColumnDefinitions="*,*">
         <Grid.Styles>
           <Style Selector="Button.active">

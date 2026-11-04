@@ -14,13 +14,6 @@ using Pos.Infra.Sync;
 
 namespace Pos.Desktop.Views;
 
-/// <summary>
-/// Wires <see cref="CashierViewModel"/>'s <c>Show*</c> hooks to real dialog windows, the
-/// window-level F2/F4 shortcuts, and Enter-in-the-search-box (barcode scan support — see
-/// <c>SearchEnterCommand</c>'s doc comment), all ported from <c>PosCashierPage.jsx</c>.
-/// This is the one place this screen touches Avalonia's windowing types directly — the
-/// ViewModel never does.
-/// </summary>
 public partial class CashierView : UserControl
 {
     public CashierView()
@@ -74,7 +67,7 @@ public partial class CashierView : UserControl
 
         vm.ShowDiscountDialog = async (role, amount, reason, subtotal) =>
         {
-            var dialogVm = new DiscountDialogViewModel(role, amount, reason, subtotal, GetApi(vm), vm.DeviceToken, vm.IsOnline);
+            var dialogVm = new DiscountDialogViewModel(role, amount, reason, subtotal, GetApi(vm), vm.DeviceToken, vm.IsOnline, vm.Currency);
             var dialog = new DiscountDialog(dialogVm);
             var applied = await dialog.ShowDialog<bool>(Owner!);
             return (applied, dialogVm.ResultAmount ?? 0, dialogVm.ResultReason, dialogVm.ResultPromotionCode);
@@ -91,7 +84,7 @@ public partial class CashierView : UserControl
         vm.ShowPaymentDialog = async (total, mpesaType, mpesaShortcode, mpesaStkConfigured) =>
         {
             var dialogVm = new PaymentDialogViewModel(total, mpesaType, mpesaShortcode, mpesaStkConfigured, GetApi(vm), vm.DeviceToken, vm.IsOnline,
-                vm.CartCustomerId, vm.CustomerStoreCreditBalance);
+                vm.CartCustomerId, vm.CustomerStoreCreditBalance, vm.Currency);
             var dialog = new PaymentDialog(dialogVm);
             await dialog.ShowDialog(Owner!);
             return dialogVm.Result;
@@ -159,10 +152,6 @@ public partial class CashierView : UserControl
         else Process.Start("xdg-open", path);
     }
 
-    // CashierViewModel's db/sync/deviceToken fields are private — these small reflection-free
-    // accessors would normally just be constructor parameters passed straight through, but
-    // CustomerDialogViewModel needs them and the View, not the ViewModel, owns dialog
-    // construction. Exposed as internal properties on CashierViewModel for exactly this.
     private static LocalDatabase GetDb(CashierViewModel vm) => vm.Db;
     private static SyncEngine GetSync(CashierViewModel vm) => vm.Sync;
     private static ApiClient GetApi(CashierViewModel vm) => vm.Api;

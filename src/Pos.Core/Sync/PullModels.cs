@@ -41,6 +41,8 @@ public sealed class PullEntities
 public sealed class TenantRow
 {
     public string Name { get; set; } = "";
+    // ISO 4217, set once at signup and immutable after — see server/config/currencies.js.
+    public string Currency { get; set; } = "USD";
     public string? LogoUrl { get; set; }
     public string? MpesaType { get; set; } // "TILL" | "PAYBILL" | null (not set up yet)
     public string? MpesaShortcode { get; set; }

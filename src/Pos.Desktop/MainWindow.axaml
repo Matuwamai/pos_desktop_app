@@ -20,10 +20,6 @@
         </DataTemplate>
       </ContentControl.DataTemplates>
     </ContentControl>
-
-    <!-- Covers the window whenever startup fails before any screen is reached (see
-         AppViewModel.InitializeAsync) — the alternative is a silent, permanently blank
-         window with no way to tell what went wrong. -->
     <Border IsVisible="{Binding FatalError, Converter={x:Static ObjectConverters.IsNotNull}}"
             Background="{StaticResource DangerSurfaceBrush}" Padding="24">
       <ScrollViewer>
@@ -36,11 +32,6 @@
         </StackPanel>
       </ScrollViewer>
     </Border>
-
-    <!-- A non-fatal banner (see HandleDeviceInvalidAsync) — unlike FatalError above,
-         this doesn't cover the window: the Setup form underneath is still usable, this
-         is just explaining why the device ended up back here. Docked to the top instead
-         of centered/full-screen for that reason. -->
     <Border IsVisible="{Binding Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
             Background="{StaticResource WarningSurfaceBrush}" Padding="12" VerticalAlignment="Top">
       <StackPanel Orientation="Horizontal" Spacing="10">

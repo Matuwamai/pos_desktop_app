@@ -7,31 +7,26 @@ using Pos.Infra.Api;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>
-/// Manual discount entry, gated on role exactly like the server (<c>services/order.js</c>:
-/// only OWNER/MANAGER may apply a manual discount) — replicated client-side here because
-/// there is no server round-trip to catch it while offline. A promo-code mode previews the
-/// discount live via <see cref="ApiClient.GetPromotionByCodeAsync"/> — only offered while
-/// <see cref="IsOnline"/>, same gating M-Pesa STK push already uses, since the promotion's
-/// active/date-window state is the server's to decide, not a stale local read. Either way
-/// the server re-validates the promotion again at sync time (<c>resolveDiscountInput</c>) —
-/// this preview is for the cashier's benefit, not the actual authority.
-/// </summary>
+
 public sealed partial class DiscountDialogViewModel : ViewModelBase
 {
     private readonly ApiClient? _api;
     private readonly string? _deviceToken;
     private readonly decimal _subtotal;
+    private readonly int _decimalDigits;
+    private readonly string _moneyFormat;
 
     public DiscountDialogViewModel(string role, decimal? currentAmount, string? currentReason, decimal subtotal = 0,
-        ApiClient? api = null, string? deviceToken = null, bool isOnline = false)
+        ApiClient? api = null, string? deviceToken = null, bool isOnline = false, string currency = "USD")
     {
         CanApplyDiscount = role is "OWNER" or "MANAGER";
         IsOnline = isOnline;
         _api = api;
         _deviceToken = deviceToken;
         _subtotal = subtotal;
-        if (currentAmount.HasValue) AmountText = currentAmount.Value.ToString("0.00", CultureInfo.InvariantCulture);
+        _decimalDigits = CurrencyInfo.GetDecimalDigits(currency);
+        _moneyFormat = _decimalDigits == 0 ? "0" : "0." + new string('0', _decimalDigits);
+        if (currentAmount.HasValue) AmountText = currentAmount.Value.ToString(_moneyFormat, CultureInfo.InvariantCulture);
         Reason = currentReason ?? "";
     }
 
@@ -87,7 +82,7 @@ public sealed partial class DiscountDialogViewModel : ViewModelBase
 
             if (promo.MinSubtotal.HasValue && _subtotal < promo.MinSubtotal.Value)
             {
-                ErrorMessage = $"This promotion requires a subtotal of at least {promo.MinSubtotal.Value:0.00}.";
+                ErrorMessage = $"This promotion requires a subtotal of at least {promo.MinSubtotal.Value.ToString(_moneyFormat, CultureInfo.InvariantCulture)}.";
                 _appliedPromotionCode = null;
                 return;
             }
@@ -95,12 +90,12 @@ public sealed partial class DiscountDialogViewModel : ViewModelBase
             switch (promo.Type)
             {
                 case "PERCENTAGE":
-                    AmountText = Money.Round2(_subtotal * (promo.Value / 100m)).ToString("0.00", CultureInfo.InvariantCulture);
+                    AmountText = Money.Round(_subtotal * (promo.Value / 100m), _decimalDigits).ToString(_moneyFormat, CultureInfo.InvariantCulture);
                     PromoPreviewLabel = $"{promo.Name} — {promo.Value:0.##}% off";
                     break;
                 case "FIXED_AMOUNT":
-                    AmountText = promo.Value.ToString("0.00", CultureInfo.InvariantCulture);
-                    PromoPreviewLabel = $"{promo.Name} — {promo.Value:0.00} off";
+                    AmountText = promo.Value.ToString(_moneyFormat, CultureInfo.InvariantCulture);
+                    PromoPreviewLabel = $"{promo.Name} — {promo.Value.ToString(_moneyFormat, CultureInfo.InvariantCulture)} off";
                     break;
                 default: // BOGO — same rule the server enforces: no computed amount, the cashier must type one.
                     PromoPreviewLabel = $"{promo.Name} — enter the discount amount this BOGO works out to.";
@@ -132,9 +127,7 @@ public sealed partial class DiscountDialogViewModel : ViewModelBase
         }
         ResultAmount = amount;
         ResultReason = string.IsNullOrWhiteSpace(Reason) ? null : Reason;
-        // Only carried through if the amount on screen is still the one that code resolved
-        // to — editing the code text after a lookup (without looking it up again) clears it,
-        // same as web_app's "apply" always reflecting the last successful lookup.
+
         ResultPromotionCode = UsePromoCode ? _appliedPromotionCode : null;
         RequestClose?.Invoke(true);
     }

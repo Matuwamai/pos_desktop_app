@@ -138,6 +138,33 @@ public class HeadlessUiTests
         RenderDialogToPng(view, Path.Combine(tempDir, "discount-dialog-promo.png"));
     }
 
+    // Milestone 2 (multi-currency, desktop/mobile): a 0-decimal currency (JPY-style)
+    // must render whole units everywhere a *Text property feeds a binding — the
+    // mechanical proof every CurrencyInfo.GetDecimalDigits(...) call site this
+    // milestone touched actually took effect, not just compiled.
+    [Fact]
+    public void PaymentDialog_jpy_currency_renders_whole_units_with_no_decimal_point()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new PaymentDialogViewModel(total: 1500m, currency: "JPY");
+        Assert.Equal("1500", vm.TotalText);
+        Assert.DoesNotContain('.', vm.TotalText);
+
+        var view = new PaymentDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog-jpy.png"));
+    }
+
+    [Fact]
+    public void DiscountDialog_jpy_currency_amount_field_has_no_decimal_point()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new DiscountDialogViewModel(role: "OWNER", currentAmount: 500m, currentReason: null, subtotal: 2000m, isOnline: true, currency: "JPY");
+        Assert.Equal("500", vm.AmountText);
+
+        var view = new DiscountDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "discount-dialog-jpy.png"));
+    }
+
     [Fact]
     public void RefundLookupDialog_renders()
     {

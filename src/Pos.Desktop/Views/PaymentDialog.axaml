@@ -6,16 +6,12 @@
         Title="Payment" Width="440" Height="600"
         WindowStartupLocation="CenterOwner">
   <StackPanel Margin="20" Spacing="12">
-    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total due" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="{Binding Total, StringFormat='{}{0:0.00}'}" FontWeight="Bold" FontSize="18" /></Grid>
-    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Remaining" Foreground="{StaticResource MutedBrush}" /><TextBlock Grid.Column="1" Text="{Binding Remaining, StringFormat='{}{0:0.00}'}" Foreground="{StaticResource MutedBrush}" /></Grid>
-    <!-- Informational only, same as the web cashier's cart-pane display — not enforced
-         as a hard cap here; the server is the actual authority at sync time. -->
-    <TextBlock Text="{Binding CustomerStoreCreditBalance, StringFormat='Store credit available: {0:0.00}'}" Foreground="{StaticResource MutedBrush}" FontSize="12" IsVisible="{Binding ShowStoreCreditBalance}" />
-
+    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Currency, StringFormat='Total due ({0})'}" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="{Binding TotalText}" FontWeight="Bold" FontSize="18" /></Grid>
+    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Remaining" Foreground="{StaticResource MutedBrush}" /><TextBlock Grid.Column="1" Text="{Binding RemainingText}" Foreground="{StaticResource MutedBrush}" /></Grid>
+    <TextBlock Text="{Binding CustomerStoreCreditBalanceText, StringFormat='Store credit available: {0}'}" Foreground="{StaticResource MutedBrush}" FontSize="12" IsVisible="{Binding ShowStoreCreditBalance}" />
     <Border BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="{StaticResource AppCornerRadius}" Padding="10" IsVisible="{Binding HasMpesaLine}">
       <TextBlock Text="{Binding MpesaHint}" TextWrapping="Wrap" FontSize="12" />
     </Border>
-
     <ItemsControl ItemsSource="{Binding Lines}">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="vm:TenderLineViewModel">

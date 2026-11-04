@@ -25,20 +25,21 @@ public sealed record DiscountInput(decimal Amount);
 public static class PricingMath
 {
     /// <param name="taxRate">E.g. 0.16 for 16%. Null when no tax rate applies (no default and no variant-level rate).</param>
-    public static PricedLine PriceLine(decimal unitPrice, decimal modifiersTotal, int quantity, decimal? taxRate)
+    /// <param name="decimalDigits">The tenant's currency's minor-unit precision — see <see cref="CurrencyInfo"/>.</param>
+    public static PricedLine PriceLine(decimal unitPrice, decimal modifiersTotal, int quantity, decimal? taxRate, int decimalDigits)
     {
-        var lineSubtotal = Money.Round2((unitPrice + modifiersTotal) * quantity);
-        var taxAmount = taxRate.HasValue ? Money.Round2(lineSubtotal * taxRate.Value) : 0m;
-        var lineTotal = Money.Round2(lineSubtotal + taxAmount);
+        var lineSubtotal = Money.Round((unitPrice + modifiersTotal) * quantity, decimalDigits);
+        var taxAmount = taxRate.HasValue ? Money.Round(lineSubtotal * taxRate.Value, decimalDigits) : 0m;
+        var lineTotal = Money.Round(lineSubtotal + taxAmount, decimalDigits);
         return new PricedLine(unitPrice, quantity, lineSubtotal, taxAmount, lineTotal);
     }
 
-    public static OrderTotals ComputeTotals(IReadOnlyList<PricedLine> lines, IReadOnlyList<DiscountInput> discounts)
+    public static OrderTotals ComputeTotals(IReadOnlyList<PricedLine> lines, IReadOnlyList<DiscountInput> discounts, int decimalDigits)
     {
-        var subtotal = Money.Round2(lines.Sum(l => l.LineSubtotal));
-        var taxTotal = Money.Round2(lines.Sum(l => l.TaxAmount));
-        var discountTotal = Money.Round2(discounts.Sum(d => d.Amount));
-        var total = Money.Round2(subtotal - discountTotal + taxTotal);
+        var subtotal = Money.Round(lines.Sum(l => l.LineSubtotal), decimalDigits);
+        var taxTotal = Money.Round(lines.Sum(l => l.TaxAmount), decimalDigits);
+        var discountTotal = Money.Round(discounts.Sum(d => d.Amount), decimalDigits);
+        var total = Money.Round(subtotal - discountTotal + taxTotal, decimalDigits);
         return new OrderTotals(subtotal, discountTotal, taxTotal, total);
     }
 }

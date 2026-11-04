@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pos.Core.Domain;
 using Pos.Core.Interfaces;
+using Pos.Core.Pricing;
 using Pos.Core.Sync;
 using Pos.Infra.Api;
 using Pos.Infra.Auth;
@@ -18,14 +19,7 @@ namespace Pos.Desktop.ViewModels;
 
 public sealed record HeldTicketSummary(string Id, string Label, DateTimeOffset HeldAt);
 
-/// <summary>
-/// The Phase 2 cashier screen: catalog, cart, modifiers, discount, customer, payment,
-/// held tickets, drawer open/close, and the periodic background sync — all working off
-/// the local SQLite tables Phase 1 pulls, per the Phase 2 plan's "one write path" design
-/// (see <see cref="SaleService"/>). Dialogs are owned by the View (shown as
-/// <c>Window.ShowDialog</c>) and invoked through the <c>Show*</c> hook delegates below,
-/// so this class never references Avalonia's windowing types directly.
-/// </summary>
+
 public sealed partial class CashierViewModel : ViewModelBase
 {
     private readonly LocalDatabase _db;
@@ -68,16 +62,12 @@ public sealed partial class CashierViewModel : ViewModelBase
     public string TenantSubdomain { get; }
     public RosterUser SignedInAs { get; }
 
-    // Exposed for CashierView's code-behind only, which owns dialog construction
-    // (CustomerDialogViewModel needs db/sync/deviceToken) — see the Show* hooks below.
     internal LocalDatabase Db => _db;
     internal SyncEngine Sync => _sync;
     internal ApiClient Api => _api;
     internal string DeviceToken => _deviceToken;
     internal string LocationId => _locationId;
-    // Set by PayAsync (a fresh local-DB read, right before the dialog is shown) so
-    // CashierView's code-behind can pass the attached customer's current store-credit
-    // balance into PaymentDialogViewModel without this ViewModel referencing it directly.
+
     internal string? CartCustomerId => _cart.CustomerId;
     internal decimal? CustomerStoreCreditBalance { get; private set; }
 
@@ -94,11 +84,44 @@ public sealed partial class CashierViewModel : ViewModelBase
     [ObservableProperty] private bool _isSyncing;
     [ObservableProperty] private int _pendingSaleCount;
 
-    [ObservableProperty] private decimal _subtotal;
-    [ObservableProperty] private decimal _discountTotal;
-    [ObservableProperty] private decimal _taxTotal;
-    [ObservableProperty] private decimal _total;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SubtotalText))]
+    private decimal _subtotal;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DiscountTotalText))]
+    private decimal _discountTotal;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TaxTotalText))]
+    private decimal _taxTotal;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalText))]
+    private decimal _total;
+
     [ObservableProperty] private string? _customerName;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SubtotalText))]
+    [NotifyPropertyChangedFor(nameof(DiscountTotalText))]
+    [NotifyPropertyChangedFor(nameof(TaxTotalText))]
+    [NotifyPropertyChangedFor(nameof(TotalText))]
+    private string _currency = "USD";
+
+    private string MoneyFormat
+    {
+        get
+        {
+            var digits = CurrencyInfo.GetDecimalDigits(Currency);
+            return digits == 0 ? "0" : "0." + new string('0', digits);
+        }
+    }
+
+    public string SubtotalText => Subtotal.ToString(MoneyFormat, System.Globalization.CultureInfo.InvariantCulture);
+    public string DiscountTotalText => "-" + DiscountTotal.ToString(MoneyFormat, System.Globalization.CultureInfo.InvariantCulture);
+    public string TaxTotalText => TaxTotal.ToString(MoneyFormat, System.Globalization.CultureInfo.InvariantCulture);
+    public string TotalText => Total.ToString(MoneyFormat, System.Globalization.CultureInfo.InvariantCulture);
 
     [ObservableProperty] private string? _drawerSessionId;
     [ObservableProperty] private string? _errorMessage;
@@ -160,12 +183,7 @@ public sealed partial class CashierViewModel : ViewModelBase
         }
         catch (DeviceUnauthorizedException ex) when (OnDeviceInvalid is not null)
         {
-            // Must be caught ahead of the generic ApiClientException branch below — it's
-            // a subclass, and C# matches catch clauses in source order. OnDeviceInvalid
-            // (wired to AppViewModel.HandleDeviceInvalidAsync) disposes the shared _db
-            // connection and replaces Current with the Setup screen — this ViewModel is
-            // effectively dead once it returns, so _deviceInvalidated tells `finally`
-            // below not to touch _db/_sync again.
+
             StopBackgroundSync();
             IsOnline = false;
             _deviceInvalidated = true;
@@ -190,11 +208,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     partial void OnSearchTextChanged(string value) => ApplyFilter();
     partial void OnSelectedCategoryIdChanged(string? value) => ApplyFilter();
 
-    /// <summary>
-    /// Ported from <c>CatalogPane.jsx</c>'s <c>handleSearchKeyDown</c>: a barcode scanner
-    /// is just a fast typist followed by Enter into the same search box — there's no
-    /// separate "scan" input or decode step, so Enter auto-adds the sole remaining match.
-    /// </summary>
+
     [RelayCommand]
     private async Task SearchEnterAsync()
     {
@@ -210,8 +224,13 @@ public sealed partial class CashierViewModel : ViewModelBase
             var variant = product.Variants[0];
             line = new CartLine
             {
-                VariantId = variant.VariantId, ProductName = product.Name, Sku = variant.Sku,
-                BaseUnitPrice = variant.Price, Modifiers = [], Quantity = 1, TaxRate = variant.TaxRate,
+                VariantId = variant.VariantId,
+                ProductName = product.Name,
+                Sku = variant.Sku,
+                BaseUnitPrice = variant.Price,
+                Modifiers = [],
+                Quantity = 1,
+                TaxRate = variant.TaxRate,
             };
         }
         else if (ShowVariantPicker is not null)
@@ -229,8 +248,7 @@ public sealed partial class CashierViewModel : ViewModelBase
         RefreshCart();
     }
 
-    /// <summary>Sum of cart quantities across this product's variants — drives the
-    /// catalog card's quantity badge. Read-only, no side effects.</summary>
+
     public int QuantityInCart(CatalogProduct product)
     {
         var variantIds = product.Variants.Select(v => v.VariantId).ToHashSet();
@@ -302,16 +320,14 @@ public sealed partial class CashierViewModel : ViewModelBase
         }
 
         var receipt = new ReceiptDocument(
-            TenantName: _tenantName, LogoImageBytes: _tenantLogoBytes, LocationName: _locationName ?? _locationId,
+            TenantName: _tenantName, LogoImageBytes: _tenantLogoBytes, Currency: Currency, LocationName: _locationName ?? _locationId,
             TerminalReceiptNo: result.TerminalReceiptNo, IssuedAt: DateTimeOffset.UtcNow,
             CashierName: SignedInAs.Name, CustomerName: _cart.CustomerName,
-            Lines: [.. _cart.Items.Select(i => new ReceiptLine(i.ProductName, i.Modifiers.Count == 0 ? null : string.Join(", ", i.Modifiers.Select(m => m.Name)), i.Quantity, i.BaseUnitPrice + i.ModifiersTotal, i.Quantity * (i.BaseUnitPrice + i.ModifiersTotal)))],
+            Lines: [.. _cart.Items.Select(i => new ReceiptLine(i.ProductName, i.Modifiers.Count == 0 ? null : string.Join(", ", i.Modifiers.Select(m => m.Name)), i.Quantity, i.BaseUnitPrice + i.ModifiersTotal, i.Quantity * (i.BaseUnitPrice + i.ModifiersTotal), _cart.DecimalDigits))],
             Subtotal: result.Totals.Subtotal, DiscountTotal: result.Totals.DiscountTotal, TaxTotal: result.Totals.TaxTotal, Total: result.Totals.Total,
-            Payments: [.. payments.Select(p => new ReceiptPayment(p.Method, p.Amount))]);
+            Payments: [.. payments.Select(p => new ReceiptPayment(p.Method, p.Amount, _cart.DecimalDigits))]);
 
-        // A jammed/unreachable printer must never undo an already-saved sale — caught
-        // and surfaced as a non-blocking message, same reasoning as SaleService's own
-        // "the write always happens regardless of connectivity" design.
+
         if (_printer is not null)
         {
             try
@@ -336,8 +352,6 @@ public sealed partial class CashierViewModel : ViewModelBase
 
     private bool CanPay => _cart.Items.Count > 0;
 
-    // A fresh local-DB read each time, not cached on the Cart — the synced balance can
-    // change between when a customer is attached and when Pay is actually tapped.
     private async Task<decimal?> GetCustomerStoreCreditBalanceAsync(string? customerId)
     {
         if (string.IsNullOrEmpty(customerId)) return null;
@@ -419,9 +433,9 @@ public sealed partial class CashierViewModel : ViewModelBase
         CartRows.Clear();
         foreach (var line in _cart.Items)
         {
-            var priced = Core.Pricing.PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate);
+            var priced = PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate, _cart.DecimalDigits);
             var modifiersSummary = line.Modifiers.Count == 0 ? "" : string.Join(", ", line.Modifiers.Select(m => m.Name));
-            CartRows.Add(new CartLineRow(line.Key, line.ProductName, modifiersSummary, line.Quantity, priced.LineSubtotal, priced.TaxAmount, priced.LineTotal));
+            CartRows.Add(new CartLineRow(line.Key, line.ProductName, modifiersSummary, line.Quantity, priced.LineSubtotal, priced.TaxAmount, priced.LineTotal, _cart.DecimalDigits));
         }
 
         var totals = _cart.ComputeTotals();
@@ -441,13 +455,10 @@ public sealed partial class CashierViewModel : ViewModelBase
         _locationName = (string?)await cmd.ExecuteScalarAsync();
     }
 
-    // Falls back to the tenant subdomain (set in the constructor) until the first
-    // successful pull populates the local `tenant` table — see SyncEngine.ApplyAsync/
-    // SyncTenantLogoAsync for how that table and the cached logo file get there.
     private async Task LoadTenantAsync()
     {
         await using var cmd = _db.Connection.CreateCommand();
-        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured FROM tenant WHERE id = 'self'";
+        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured, currency FROM tenant WHERE id = 'self'";
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync()) return;
 
@@ -457,6 +468,8 @@ public sealed partial class CashierViewModel : ViewModelBase
         _mpesaType = reader.IsDBNull(2) ? null : reader.GetString(2);
         _mpesaShortcode = reader.IsDBNull(3) ? null : reader.GetString(3);
         _mpesaStkConfigured = !reader.IsDBNull(4) && reader.GetInt32(4) != 0;
+        Currency = reader.IsDBNull(5) ? "USD" : reader.GetString(5);
+        _cart.DecimalDigits = CurrencyInfo.GetDecimalDigits(Currency);
     }
 
     private async Task LoadPrinterAsync()
@@ -532,7 +545,7 @@ public sealed partial class CashierViewModel : ViewModelBase
                 decimal? taxRate = !reader.IsDBNull(7) && _taxRateCache.TryGetValue(reader.GetString(7), out var rate) ? rate : null;
                 entry.Variants.Add(new CatalogVariant(
                     reader.GetString(4), reader.GetString(5), decimal.Parse(reader.GetString(6), System.Globalization.CultureInfo.InvariantCulture),
-                    taxRate, stock, tracksInventory));
+                    taxRate, stock, tracksInventory, CurrencyInfo.GetDecimalDigits(Currency)));
             }
         }
 

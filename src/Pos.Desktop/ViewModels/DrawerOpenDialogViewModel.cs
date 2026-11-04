@@ -4,10 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>
-/// A hard gate before selling, ported from the web cashier's non-dismissible
-/// <c>DrawerOpenModal</c> — there is no Cancel command here on purpose.
-/// </summary>
+
 public sealed partial class DrawerOpenDialogViewModel : ViewModelBase
 {
     [ObservableProperty] private string _openingFloatText = "0.00";

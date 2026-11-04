@@ -33,7 +33,7 @@
                     <ToggleButton IsChecked="{Binding IsSelected, Mode=OneWay}" Command="{Binding ToggleCommand}" Margin="0,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
                       <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding Name}" />
-                        <TextBlock Grid.Column="1" Text="{Binding PriceAdjustment, StringFormat='+{0:0.00}'}" IsVisible="{Binding PriceAdjustment}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                        <TextBlock Grid.Column="1" Text="{Binding PriceAdjustmentText}" IsVisible="{Binding PriceAdjustment}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
                       </Grid>
                     </ToggleButton>
                   </DataTemplate>
@@ -48,7 +48,7 @@
         <Grid ColumnDefinitions="Auto,Auto,*,Auto">
           <TextBlock Grid.Column="0" Text="Qty" VerticalAlignment="Center" Margin="0,0,10,0" />
           <NumericUpDown Grid.Column="1" Value="{Binding Quantity}" Minimum="1" Width="110" />
-          <TextBlock Grid.Column="3" Text="{Binding PreviewUnitPrice, StringFormat='{}{0:0.00} each'}" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+          <TextBlock Grid.Column="3" Text="{Binding PreviewUnitPriceText, StringFormat='{}{0} each'}" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
         </Grid>
       </Border>
 

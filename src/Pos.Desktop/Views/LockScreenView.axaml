@@ -7,10 +7,6 @@
   <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="360">
     <StackPanel Spacing="16">
       <TextBlock Text="Who's ringing up?" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
-
-      <!-- Still a ListBox for its built-in SelectedItem binding — only the visual
-           presentation changes: a horizontal row of initial avatars instead of a
-           bare vertical list of names. -->
       <ListBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}" HorizontalAlignment="Center">
         <ListBox.ItemsPanel>
           <ItemsPanelTemplate>
@@ -38,9 +34,6 @@
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-
-      <!-- Read-only dot display, not an editable field — the PIN pad below is the only
-           way to change it. -->
       <TextBlock Text="{Binding Pin, Converter={x:Static vm:TextConverters.PinDots}}"
                  FontSize="22" HorizontalAlignment="Center" LetterSpacing="2" />
 

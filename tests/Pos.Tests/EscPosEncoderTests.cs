@@ -13,8 +13,8 @@ namespace Pos.Tests;
 /// </summary>
 public class EscPosEncoderTests
 {
-    private static ReceiptDocument SampleReceipt(string tenantName = "Acme Coffee", string? customerName = null) => new(
-        TenantName: tenantName, LogoImageBytes: null, LocationName: "Main Street",
+    private static ReceiptDocument SampleReceipt(string tenantName = "Acme Coffee", string? customerName = null, string currency = "USD") => new(
+        TenantName: tenantName, LogoImageBytes: null, Currency: currency, LocationName: "Main Street",
         TerminalReceiptNo: "T1-20260101-0001", IssuedAt: new DateTimeOffset(2026, 1, 1, 9, 0, 0, TimeSpan.Zero),
         CashierName: "Jane", CustomerName: customerName,
         Lines: [new ReceiptLine("Latte", "+ Extra shot", 2, 10.49m, 20.98m)],
@@ -113,5 +113,33 @@ public class EscPosEncoderTests
         await printer.OpenCashDrawerAsync();
 
         Assert.Equal([EscPosEncoder.EncodeDrawerKick()], transport.Writes);
+    }
+
+    [Fact]
+    public void EncodeReceipt_shows_the_currency_code_once_near_the_header()
+    {
+        var bytes = EscPosEncoder.EncodeReceipt(SampleReceipt(currency: "KES"), new PrinterProfile(), logoRaster: null);
+        var text = Encoding.ASCII.GetString(bytes);
+        Assert.Contains("T1-20260101-0001 - KES", text);
+    }
+
+    [Fact]
+    public void EncodeReceipt_renders_whole_units_with_no_decimal_point_for_a_zero_decimal_currency()
+    {
+        var receipt = SampleReceipt(currency: "JPY") with
+        {
+            Lines = [new ReceiptLine("Latte", null, 2, 1050m, 2100m)],
+            Subtotal = 2100m,
+            DiscountTotal = 0,
+            TaxTotal = 0,
+            Total = 2100m,
+            Payments = [new ReceiptPayment("CASH", 2100m)],
+        };
+        var bytes = EscPosEncoder.EncodeReceipt(receipt, new PrinterProfile(), logoRaster: null);
+        var text = Encoding.ASCII.GetString(bytes);
+
+        Assert.Contains("2100", text);
+        Assert.DoesNotContain("2100.00", text);
+        Assert.DoesNotContain("2100.", text);
     }
 }

@@ -1,18 +1,19 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pos.Core.Domain;
 
 namespace Pos.Desktop.ViewModels;
-
 /// <summary>One selectable modifier, inside a <see cref="ModifierGroupSelectionViewModel"/>.
 /// Selection is driven through <see cref="ToggleCommand"/>, not a two-way-bound checkbox,
 /// so min/max-select enforcement (in the owning group) always runs before the UI updates.</summary>
-public sealed partial class ModifierOptionSelectionViewModel(ModifierOption option, ModifierGroupSelectionViewModel group) : ViewModelBase
+public sealed partial class ModifierOptionSelectionViewModel(ModifierOption option, ModifierGroupSelectionViewModel group, int decimalDigits = 2) : ViewModelBase
 {
     public ModifierOption Option { get; } = option;
     public string Name => Option.Name;
     public decimal PriceAdjustment => Option.PriceAdjustment;
+    public string PriceAdjustmentText => "+" + PriceAdjustment.ToString(decimalDigits == 0 ? "0" : "0." + new string('0', decimalDigits), CultureInfo.InvariantCulture);
 
     [ObservableProperty] private bool _isSelected;
 
@@ -30,14 +31,14 @@ public sealed partial class ModifierGroupSelectionViewModel : ViewModelBase
 {
     private readonly Action _onChanged;
 
-    public ModifierGroupSelectionViewModel(ModifierGroupOptions source, Action onChanged)
+    public ModifierGroupSelectionViewModel(ModifierGroupOptions source, Action onChanged, int decimalDigits = 2)
     {
         GroupId = source.GroupId;
         Name = source.Name;
         MinSelect = source.MinSelect;
         MaxSelect = source.MaxSelect;
         _onChanged = onChanged;
-        Options = new ObservableCollection<ModifierOptionSelectionViewModel>(source.Options.Select(o => new ModifierOptionSelectionViewModel(o, this)));
+        Options = new ObservableCollection<ModifierOptionSelectionViewModel>(source.Options.Select(o => new ModifierOptionSelectionViewModel(o, this, decimalDigits)));
     }
 
     public string GroupId { get; }
@@ -87,7 +88,8 @@ public sealed partial class VariantModifierDialogViewModel : ViewModelBase
         ProductName = product.Name;
         Variants = [.. product.Variants];
         SelectedVariant = Variants.Count == 1 ? Variants[0] : null;
-        Groups = [.. modifierGroups.Select(g => new ModifierGroupSelectionViewModel(g, OnSelectionChanged))];
+        var decimalDigits = Variants.Count > 0 ? Variants[0].DecimalDigits : 2;
+        Groups = [.. modifierGroups.Select(g => new ModifierGroupSelectionViewModel(g, OnSelectionChanged, decimalDigits))];
     }
 
     public string ProductName { get; }
@@ -97,12 +99,21 @@ public sealed partial class VariantModifierDialogViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanConfirm))]
     [NotifyPropertyChangedFor(nameof(PreviewUnitPrice))]
+    [NotifyPropertyChangedFor(nameof(PreviewUnitPriceText))]
     private CatalogVariant? _selectedVariant;
 
     [ObservableProperty] private int _quantity = 1;
 
     public bool CanConfirm => SelectedVariant is not null && Quantity > 0 && Groups.All(g => g.IsSatisfied);
     public decimal PreviewUnitPrice => (SelectedVariant?.Price ?? 0) + Groups.SelectMany(g => g.SelectedOptions).Sum(o => o.PriceAdjustment);
+    public string PreviewUnitPriceText
+    {
+        get
+        {
+            var digits = SelectedVariant?.DecimalDigits ?? 2;
+            return PreviewUnitPrice.ToString(digits == 0 ? "0" : "0." + new string('0', digits), CultureInfo.InvariantCulture);
+        }
+    }
 
     [RelayCommand]
     private void SelectVariant(CatalogVariant variant) => SelectedVariant = variant;
@@ -137,5 +148,6 @@ public sealed partial class VariantModifierDialogViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(CanConfirm));
         OnPropertyChanged(nameof(PreviewUnitPrice));
+        OnPropertyChanged(nameof(PreviewUnitPriceText));
     }
 }

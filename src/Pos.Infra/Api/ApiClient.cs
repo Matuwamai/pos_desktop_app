@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Pos.Core.Pricing;
 using Pos.Core.Sync;
 using Pos.Infra.Json;
 
@@ -308,9 +309,18 @@ public class OrderSummaryDto
     public string Id { get; set; } = "";
     public int OrderNumber { get; set; }
     public string Status { get; set; } = "";
+    public string Currency { get; set; } = "USD";
     public decimal Total { get; set; }
     public string CreatedAt { get; set; } = "";
     public CustomerRefDto? Customer { get; set; }
+
+    public string TotalText => Total.ToString(MoneyFormat(Currency), System.Globalization.CultureInfo.InvariantCulture);
+
+    internal static string MoneyFormat(string currency)
+    {
+        var digits = CurrencyInfo.GetDecimalDigits(currency);
+        return digits == 0 ? "0" : "0." + new string('0', digits);
+    }
 }
 
 public sealed class OrderDetailDto : OrderSummaryDto

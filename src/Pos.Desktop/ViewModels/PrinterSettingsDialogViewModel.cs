@@ -7,12 +7,7 @@ using Pos.Infra.Storage;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>
-/// Configures which printer transport this terminal uses — the feature is unusable
-/// without somewhere to set this. Text fields rather than typed inputs throughout
-/// (host, port, baud rate, …) to keep the form simple; validated/defaulted on save in
-/// <see cref="BuildSettings"/>, same pattern as the other dialogs' amount fields.
-/// </summary>
+
 public sealed partial class PrinterSettingsDialogViewModel : ViewModelBase
 {
     private readonly LocalDatabase _db;
@@ -74,10 +69,8 @@ public sealed partial class PrinterSettingsDialogViewModel : ViewModelBase
             }
 
             var sample = new ReceiptDocument(
-                TenantName: "Test receipt", LogoImageBytes: null, LocationName: "Printer settings",
-                // "Test Cashier", not an em-dash placeholder — EscPosEncoder sanitizes
-                // non-ASCII to '?' (deliberately, see its doc comment), which made this
-                // sample receipt confusingly print "Served by ?" until this fix.
+                TenantName: "Test receipt", LogoImageBytes: null, Currency: "USD", LocationName: "Printer settings",
+
                 TerminalReceiptNo: "T-TEST-0001", IssuedAt: DateTimeOffset.Now, CashierName: "Test Cashier", CustomerName: null,
                 Lines: [new ReceiptLine("Sample item", "+ Sample modifier", 1, 1.00m, 1.00m)],
                 Subtotal: 1.00m, DiscountTotal: 0, TaxTotal: 0, Total: 1.00m,

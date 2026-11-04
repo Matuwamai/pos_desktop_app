@@ -38,7 +38,7 @@ public class PricingMathTests
     public void PriceLine_matches_server_round2(decimal unitPrice, decimal modifiersTotal, int quantity, decimal? taxRate,
         decimal expectedSubtotal, decimal expectedTax, decimal expectedTotal)
     {
-        var line = PricingMath.PriceLine(unitPrice, modifiersTotal, quantity, taxRate);
+        var line = PricingMath.PriceLine(unitPrice, modifiersTotal, quantity, taxRate, decimalDigits: 2);
 
         Assert.Equal(expectedSubtotal, line.LineSubtotal);
         Assert.Equal(expectedTax, line.TaxAmount);
@@ -62,7 +62,7 @@ public class PricingMathTests
     public void ComputeTotals_matches_server_round2(List<PricedLine> lines, List<DiscountInput> discounts,
         decimal expectedSubtotal, decimal expectedDiscountTotal, decimal expectedTaxTotal, decimal expectedTotal)
     {
-        var totals = PricingMath.ComputeTotals(lines, discounts);
+        var totals = PricingMath.ComputeTotals(lines, discounts, decimalDigits: 2);
 
         Assert.Equal(expectedSubtotal, totals.Subtotal);
         Assert.Equal(expectedDiscountTotal, totals.DiscountTotal);
@@ -81,7 +81,7 @@ public class PricingMathTests
     [Fact]
     public void FloatRoundingDivergence_at_17_5_percent_is_a_known_server_bug()
     {
-        var line = PricingMath.PriceLine(unitPrice: 0.5m, modifiersTotal: 0.5m, quantity: 3, taxRate: 0.175m);
+        var line = PricingMath.PriceLine(unitPrice: 0.5m, modifiersTotal: 0.5m, quantity: 3, taxRate: 0.175m, decimalDigits: 2);
 
         Assert.Equal(0.525m, line.LineSubtotal * 0.175m); // the true value: an exact half-cent tie
         Assert.Equal(0.53m, line.TaxAmount);               // decimal: correct round-half-away-from-zero
@@ -98,7 +98,7 @@ public class PricingMathTests
     [Fact]
     public void FloatRoundingDivergence_at_an_unreachable_3dp_price_is_not_a_real_bug()
     {
-        var line = PricingMath.PriceLine(unitPrice: 1.005m, modifiersTotal: 0m, quantity: 1, taxRate: null);
+        var line = PricingMath.PriceLine(unitPrice: 1.005m, modifiersTotal: 0m, quantity: 1, taxRate: null, decimalDigits: 2);
 
         Assert.Equal(1.01m, line.LineSubtotal); // decimal: the true value, rounded correctly
         // The live server, run today, returns 1.00 — but only reachable via a 3dp price,

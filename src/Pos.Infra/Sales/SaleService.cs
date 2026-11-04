@@ -49,7 +49,7 @@ public sealed class SaleService(LocalDatabase db, string terminalId)
         foreach (var line in cart.Items)
         {
             var itemId = Guid.NewGuid().ToString();
-            var priced = PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate);
+            var priced = PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate, cart.DecimalDigits);
             await SyncEngine.UpsertAsync(tx, "order_items", "id",
                 ("id", itemId), ("order_id", orderId), ("variant_id", line.VariantId), ("product_name", line.ProductName),
                 ("sku", line.Sku), ("quantity", line.Quantity.ToString(CultureInfo.InvariantCulture)),

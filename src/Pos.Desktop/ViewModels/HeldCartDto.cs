@@ -2,13 +2,7 @@ using Pos.Core.Domain;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>
-/// A plain, explicit JSON shape for a held sale's serialized cart — not <c>Cart</c>/
-/// <c>CartLine</c> directly. Those use <c>required</c> init-only members and an
-/// <c>IReadOnlyList&lt;CartModifier&gt;</c> property, which System.Text.Json can
-/// round-trip, but stacking all of that reflection-based behavior is more fragile than
-/// writing the ten lines of explicit mapping below.
-/// </summary>
+
 internal sealed class HeldCartDto
 {
     public List<HeldCartLineDto> Items { get; set; } = [];

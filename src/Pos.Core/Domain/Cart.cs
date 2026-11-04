@@ -44,6 +44,13 @@ public sealed class Cart
     public decimal? DiscountAmount { get; set; }
     public string? DiscountReason { get; set; }
 
+    /// <summary>The tenant's currency's minor-unit precision (see
+    /// <see cref="Pricing.CurrencyInfo"/>) — defaults to 2, set once by
+    /// <c>CashierViewModel</c> right after the cached tenant row loads, same as a
+    /// tenant-level fact rather than a per-call argument threaded through every
+    /// <see cref="PricingMath"/> call site.</summary>
+    public int DecimalDigits { get; set; } = 2;
+
     /// <summary>Set only when <see cref="DiscountAmount"/> came from a promo code
     /// (DiscountDialogViewModel already resolved/previewed the amount live before the
     /// cashier applied it) — carried through so the server can re-validate the
@@ -79,12 +86,12 @@ public sealed class Cart
     }
 
     public IReadOnlyList<PricedLine> PriceLines() =>
-        [.. Items.Select(line => PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate))];
+        [.. Items.Select(line => PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate, DecimalDigits))];
 
     public IReadOnlyList<DiscountInput> Discounts() =>
         DiscountAmount.HasValue && DiscountAmount.Value > 0 ? [new DiscountInput(DiscountAmount.Value)] : [];
 
-    public OrderTotals ComputeTotals() => PricingMath.ComputeTotals(PriceLines(), Discounts());
+    public OrderTotals ComputeTotals() => PricingMath.ComputeTotals(PriceLines(), Discounts(), DecimalDigits);
 
     /// <summary>
     /// Builds the exact push DTO for <c>sync/push</c>'s <c>order.create</c> op. Note the
@@ -104,7 +111,7 @@ public sealed class Cart
         var items = new List<OfflineOrderItem>(Items.Count);
         foreach (var line in Items)
         {
-            var priced = PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate);
+            var priced = PricingMath.PriceLine(line.BaseUnitPrice, line.ModifiersTotal, line.Quantity, line.TaxRate, DecimalDigits);
             items.Add(new OfflineOrderItem
             {
                 VariantId = line.VariantId,

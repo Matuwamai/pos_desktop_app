@@ -5,23 +5,20 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Pos.Core.Pricing;
 using Pos.Core.Sync;
 using Pos.Infra.Api;
 
 namespace Pos.Desktop.ViewModels;
 
-/// <summary>One tender line. <c>CARD</c>/<c>OTHER</c> just record a reference.
-/// <c>GIFT_CARD</c> additionally needs <see cref="GiftCardCode"/> — the server checks
-/// and decrements its balance atomically at sync time (<c>offlineSync.js</c>'s
-/// <c>importOfflineOrder</c>), so a stale local balance is never trusted here.</summary>
 public sealed partial class TenderLineViewModel : ViewModelBase
 {
     private readonly bool _showStkOption;
 
-    public TenderLineViewModel(string method, decimal amount, bool showStkOption = false)
+    public TenderLineViewModel(string method, decimal amount, bool showStkOption = false, string moneyFormat = "0.00")
     {
         Method = method;
-        AmountText = amount > 0 ? amount.ToString("0.00", CultureInfo.InvariantCulture) : "";
+        AmountText = amount > 0 ? amount.ToString(moneyFormat, CultureInfo.InvariantCulture) : "";
         _showStkOption = showStkOption;
     }
 
@@ -35,9 +32,6 @@ public sealed partial class TenderLineViewModel : ViewModelBase
     [ObservableProperty] private string _transactionRef = "";
     [ObservableProperty] private string _giftCardCode = "";
 
-    // The "Send prompt" sub-flow, shown alongside (never instead of) the manual
-    // confirmation-code field above — whichever fills in TransactionRef first is
-    // what lets the dialog submit.
     [ObservableProperty] private string _stkPhoneNumber = "";
     [ObservableProperty] private bool _isSendingStk;
     [NotifyPropertyChangedFor(nameof(HasStkStatus))]
@@ -53,43 +47,32 @@ public sealed partial class TenderLineViewModel : ViewModelBase
     public bool IsStoreCredit => Method == Pos.Core.Sync.OfflinePaymentMethod.StoreCredit;
 }
 
-/// <summary>
-/// Payment entry, ported from <c>PaymentModal.jsx</c>: split tenders, quick-cash buttons,
-/// submit once the tendered total covers the sale. Gift card and store credit are only
-/// ever offered while <see cref="IsOnline"/> (same gating M-Pesa STK push already uses) —
-/// not because this dialog talks to the server for them (it doesn't; they queue through
-/// the same offline-sync outbox as every other tender), but because redeeming either one
-/// needs a fresh, in-transaction balance check the server can only do once the sale
-/// actually syncs, and that should happen promptly, not sit queued indefinitely.
-/// </summary>
+
 public sealed partial class PaymentDialogViewModel : ViewModelBase
 {
-    // Instance property, not static: Avalonia's {Binding} only resolves against the
-    // DataContext instance, not static members (those need {x:Static}) — simpler to
-    // make this an instance property than to switch every binding site to x:Static.
     public string[] Methods { get; }
 
     private readonly ApiClient? _api;
     private readonly string? _deviceToken;
+    private readonly int _decimalDigits;
+    private readonly string _moneyFormat;
 
     public bool IsOnline { get; }
     public string? CustomerId { get; }
+    public string Currency { get; }
 
-    /// <summary>Informational only, same as the web cashier's cart-pane display — not
-    /// enforced client-side as a hard cap. The server is the actual authority on the
-    /// customer's current balance at the moment the sale syncs.</summary>
     public decimal? CustomerStoreCreditBalance { get; }
     public bool ShowStoreCreditBalance => CustomerStoreCreditBalance is > 0;
+    public string? CustomerStoreCreditBalanceText => CustomerStoreCreditBalance?.ToString(_moneyFormat, CultureInfo.InvariantCulture);
 
-    // STK push needs a live round-trip to the server — unlike every other tender
-    // here, which never leaves the local SQLite write path (see SaleService). Only
-    // offered when both a credential is configured and the terminal is online;
-    // otherwise the manual confirmation-code field is the only option, same as
-    // before this existed.
+
     public PaymentDialogViewModel(decimal total, string? mpesaType = null, string? mpesaShortcode = null,
         bool mpesaStkConfigured = false, ApiClient? api = null, string? deviceToken = null, bool isOnline = false,
-        string? customerId = null, decimal? customerStoreCreditBalance = null)
+        string? customerId = null, decimal? customerStoreCreditBalance = null, string currency = "USD")
     {
+        Currency = currency;
+        _decimalDigits = CurrencyInfo.GetDecimalDigits(currency);
+        _moneyFormat = _decimalDigits == 0 ? "0" : "0." + new string('0', _decimalDigits);
         Total = total;
         MpesaShortcode = mpesaShortcode;
         MpesaHint = string.IsNullOrWhiteSpace(mpesaShortcode)
@@ -117,6 +100,7 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(Tendered));
         OnPropertyChanged(nameof(Remaining));
+        OnPropertyChanged(nameof(RemainingText));
         OnPropertyChanged(nameof(CanSubmit));
         OnPropertyChanged(nameof(HasMpesaLine));
     }
@@ -125,17 +109,19 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
 
     private void AddLineInternal(string method, decimal amount)
     {
-        var line = new TenderLineViewModel(method, amount, ShowStkOption);
+        var line = new TenderLineViewModel(method, amount, ShowStkOption, _moneyFormat);
         line.PropertyChanged += (_, _) => NotifyTotalsChanged();
         Lines.Add(line);
         NotifyTotalsChanged();
     }
 
     public decimal Total { get; }
+    public string TotalText => Total.ToString(_moneyFormat, CultureInfo.InvariantCulture);
     public ObservableCollection<TenderLineViewModel> Lines { get; } = [];
 
     public decimal Tendered => Lines.Sum(l => l.Amount);
-    public decimal Remaining => Math.Round(Total - Tendered, 2);
+    public decimal Remaining => Money.Round(Total - Tendered, _decimalDigits);
+    public string RemainingText => Remaining.ToString(_moneyFormat, CultureInfo.InvariantCulture);
     public bool CanSubmit => Remaining <= 0.001m && Lines.Count > 0 &&
         Lines.All(l => l.Amount > 0
             && (l.Method != OfflinePaymentMethod.Mpesa || !string.IsNullOrWhiteSpace(l.TransactionRef))
@@ -163,7 +149,7 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
         var last = Lines.LastOrDefault();
         if (last is not null && last.Method == OfflinePaymentMethod.Cash)
         {
-            last.AmountText = (last.Amount + bump).ToString("0.00", CultureInfo.InvariantCulture);
+            last.AmountText = (last.Amount + bump).ToString(_moneyFormat, CultureInfo.InvariantCulture);
             NotifyTotalsChanged();
         }
         else
@@ -191,12 +177,7 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
 
     private static readonly Regex KenyanPhoneRegex = new(@"^254[17]\d{8}$", RegexOptions.Compiled);
 
-    // Resolves to a TransactionRef, same as if the cashier had typed one in — once
-    // this fills it, CanSubmit's check ("TransactionRef is non-blank") is satisfied
-    // exactly like manual entry, no separate state to track there. Bounded by a
-    // wall-clock deadline rather than CancellationToken-driven cancellation, so a
-    // plain timeout and a real connection error are distinguishable in the catch
-    // below instead of both throwing the same way.
+
     [RelayCommand]
     private async Task SendStkPushAsync(TenderLineViewModel line)
     {
