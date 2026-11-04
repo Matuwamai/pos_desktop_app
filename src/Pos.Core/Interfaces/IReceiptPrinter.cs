@@ -3,14 +3,6 @@ using Pos.Core.Pricing;
 
 namespace Pos.Core.Interfaces;
 
-/// <summary>
-/// What to print — built once per sale and handed to whichever
-/// <see cref="IReceiptPrinter"/> is configured for the terminal. Deliberately carries a
-/// raw <see cref="LogoImageBytes"/> (whatever was cached — PNG/JPEG, not pre-converted)
-/// rather than an already-rasterised bitmap: keeps Pos.Core free of any image-library
-/// dependency, since only Pos.Hardware's printer implementation needs one
-/// (<c>LogoRasterConverter</c>, SkiaSharp).
-/// </summary>
 public sealed record ReceiptDocument(
     string TenantName,
     byte[]? LogoImageBytes,

@@ -1,31 +1,12 @@
 namespace Pos.Core.Pricing;
 
-/// <summary>One priced sale line, mirroring <c>priceAndValidateItem</c> in <c>server/services/order.js</c>.</summary>
 public sealed record PricedLine(decimal UnitPrice, int Quantity, decimal LineSubtotal, decimal TaxAmount, decimal LineTotal);
 
 /// <summary>Order-level totals, mirroring the aggregation in <c>createOrder</c> (same file).</summary>
 public sealed record OrderTotals(decimal Subtotal, decimal DiscountTotal, decimal TaxTotal, decimal Total);
-
-/// <summary>
-/// A manual discretionary discount or a promotion-code discount (percentage/fixed, resolved
-/// against the subtotal) — either way, pricing math itself only ever *replays* a plain amount
-/// the cashier already applied (for a promo code, previewed live via
-/// <c>ApiClient.GetPromotionByCodeAsync</c> before the discount was applied — see
-/// <c>Cart.DiscountPromotionCode</c>); it never resolves a code itself.
-/// </summary>
 public sealed record DiscountInput(decimal Amount);
-
-/// <summary>
-/// C# port of the pricing arithmetic in <c>server/services/order.js</c>, so the desktop computes
-/// (or re-validates, for an offline sale pushed later) the exact same totals as the server.
-/// See <see cref="Money"/> for why decimal rounding is safe to use in place of the server's
-/// float rounding. Keep this in lockstep with <c>order.js</c> if that file's math changes —
-/// the golden fixtures in <c>tests/Pos.Tests/Fixtures/pricing-golden.json</c> will catch drift.
-/// </summary>
 public static class PricingMath
 {
-    /// <param name="taxRate">E.g. 0.16 for 16%. Null when no tax rate applies (no default and no variant-level rate).</param>
-    /// <param name="decimalDigits">The tenant's currency's minor-unit precision — see <see cref="CurrencyInfo"/>.</param>
     public static PricedLine PriceLine(decimal unitPrice, decimal modifiersTotal, int quantity, decimal? taxRate, int decimalDigits)
     {
         var lineSubtotal = Money.Round((unitPrice + modifiersTotal) * quantity, decimalDigits);

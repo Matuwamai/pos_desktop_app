@@ -1,12 +1,5 @@
 namespace Pos.Core.Interfaces;
 
-/// <summary>
-/// Local-only secret storage: the enrolled device token and the local database's
-/// encryption key. Implemented in Pos.Infra with
-/// <c>Microsoft.AspNetCore.DataProtection</c> (cross-platform, no OS keychain
-/// dependency), writing under the app's <c>secrets/</c> directory — never committed
-/// (see <c>.gitignore</c>) and never synced to the server.
-/// </summary>
 public interface ISecretStore
 {
     Task<string?> GetAsync(string key, CancellationToken ct = default);

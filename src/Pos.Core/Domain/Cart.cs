@@ -4,20 +4,12 @@ using Pos.Core.Sync;
 namespace Pos.Core.Domain;
 
 public sealed record CartModifier(string Id, string Name, decimal PriceAdjustment);
-
-/// <summary>One cart line: a variant plus a fixed modifier selection. Adding the same
-/// variant+modifier combination again should bump <see cref="Quantity"/> rather than add
-/// a second line — <see cref="Key"/> is what a caller dedupes on, matching the web
-/// cashier's cart slice (<c>posSlice.js</c>: <c>${variantId}::${sortedModifierIds}</c>).</summary>
 public sealed class CartLine
 {
     public required string VariantId { get; init; }
     public required string ProductName { get; init; }
     public required string Sku { get; init; }
 
-    /// <summary>The variant's own price — modifiers are tracked separately in
-    /// <see cref="Modifiers"/> and summed via <see cref="ModifiersTotal"/>. Not the same
-    /// as the wire payload's <c>unitPrice</c> — see <see cref="Cart.ToOfflineOrderPayload"/>.</summary>
     public required decimal BaseUnitPrice { get; init; }
     public required IReadOnlyList<CartModifier> Modifiers { get; init; }
     public required int Quantity { get; set; }
@@ -27,15 +19,6 @@ public sealed class CartLine
 
     public string Key => VariantId + "::" + string.Join(",", Modifiers.Select(m => m.Id).OrderBy(id => id, StringComparer.Ordinal));
 }
-
-/// <summary>
-/// An in-progress sale: lines, an optional attached customer, and at most one discount —
-/// a concrete <see cref="DiscountAmount"/> either way, whether it came from a manual entry
-/// or (<see cref="DiscountPromotionCode"/> set) a promo code previewed live before the
-/// cashier applied it; nothing here resolves a code itself. Pricing always goes through
-/// <see cref="PricingMath"/>, the same decimal port of the server's <c>round2()</c> math
-/// that Pos.Core's golden-fixture tests already prove agrees with the server to the cent.
-/// </summary>
 public sealed class Cart
 {
     public List<CartLine> Items { get; } = [];
@@ -43,19 +26,7 @@ public sealed class Cart
     public string? CustomerName { get; set; }
     public decimal? DiscountAmount { get; set; }
     public string? DiscountReason { get; set; }
-
-    /// <summary>The tenant's currency's minor-unit precision (see
-    /// <see cref="Pricing.CurrencyInfo"/>) — defaults to 2, set once by
-    /// <c>CashierViewModel</c> right after the cached tenant row loads, same as a
-    /// tenant-level fact rather than a per-call argument threaded through every
-    /// <see cref="PricingMath"/> call site.</summary>
     public int DecimalDigits { get; set; } = 2;
-
-    /// <summary>Set only when <see cref="DiscountAmount"/> came from a promo code
-    /// (DiscountDialogViewModel already resolved/previewed the amount live before the
-    /// cashier applied it) — carried through so the server can re-validate the
-    /// promotion is still active/in-window at the moment the sale actually syncs. Null
-    /// for an ordinary manual discount.</summary>
     public string? DiscountPromotionCode { get; set; }
 
     public void AddOrIncrement(CartLine line)
@@ -92,17 +63,6 @@ public sealed class Cart
         DiscountAmount.HasValue && DiscountAmount.Value > 0 ? [new DiscountInput(DiscountAmount.Value)] : [];
 
     public OrderTotals ComputeTotals() => PricingMath.ComputeTotals(PriceLines(), Discounts(), DecimalDigits);
-
-    /// <summary>
-    /// Builds the exact push DTO for <c>sync/push</c>'s <c>order.create</c> op. Note the
-    /// wire payload's <c>unitPrice</c> is <see cref="CartLine.BaseUnitPrice"/> **plus**
-    /// modifiers, not the base price alone: <c>server/services/offlineSync.js</c>'s
-    /// <c>importOfflineOrder</c> recomputes <c>lineSubtotal = round2(unitPrice * quantity)</c>
-    /// with no separate modifiers field to add in (unlike the *online* path in
-    /// <c>order.js</c>'s <c>priceAndValidateItem</c>, which keeps them separate) — so the
-    /// combined price has to already be baked in before it's sent, same as the web
-    /// cashier does at add-to-cart time.
-    /// </summary>
     public OfflineOrderPayload ToOfflineOrderPayload(
         string id, string locationId, string cashierId, string? cashDrawerSessionId,
         string terminalReceiptNo, DateTimeOffset createdAt, IReadOnlyList<OfflineOrderPayment> payments)

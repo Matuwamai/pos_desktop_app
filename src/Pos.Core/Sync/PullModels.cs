@@ -2,11 +2,6 @@ using System.Text.Json;
 
 namespace Pos.Core.Sync;
 
-// Mirrors the JSON shapes `services/sync.js` (`pullChanges`) and
-// `routers/sync.js` (`GET /sync/pull`) produce. Every row carries `UpdatedAt` —
-// the cursor field — and the server's own tombstone model is `isActive: false`,
-// not a delete, so these are plain upserts, never row removal.
-
 public sealed class PullResponse
 {
     public long ServerTime { get; set; }
@@ -30,14 +25,8 @@ public sealed class PullEntities
     public List<CustomerRow> Customers { get; set; } = [];
     public List<InventoryRow> Inventory { get; set; } = [];
     public List<RosterUserRow> Users { get; set; } = [];
-
-    /// <summary>Singleton, not a list — this terminal's own tenant. Null only if the
-    /// tenant row itself is somehow missing server-side (shouldn't happen in practice).</summary>
     public TenantRow? Tenant { get; set; }
 }
-
-/// <summary>Always sent in full on every pull (not filtered by "changed since") — one
-/// row, not worth a cursor of its own. See <c>services/sync.js</c>'s comment on why.</summary>
 public sealed class TenantRow
 {
     public string Name { get; set; } = "";
@@ -171,9 +160,6 @@ public sealed class InventoryRow
     public decimal? LowStockThreshold { get; set; }
     public string UpdatedAt { get; set; } = "";
 }
-
-/// <summary>The offline-login roster: permission codes already resolved server-side, and a
-/// bcrypt PIN hash (never the password hash) — the till never recomputes permissions itself.</summary>
 public sealed class RosterUserRow
 {
     public string Id { get; set; } = "";

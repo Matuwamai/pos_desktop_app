@@ -22,11 +22,6 @@ public sealed partial class ModifierOptionSelectionViewModel(ModifierOption opti
 
     public void SetSelectedInternal(bool value) => IsSelected = value;
 }
-
-/// <summary>One modifier group's selection state. <see cref="MaxSelect"/> of 1 behaves
-/// like a radio group (picking a new option clears the old one); any higher max blocks
-/// a new pick once <see cref="MaxSelect"/> is already reached — both rules ported
-/// directly from the web cashier's <c>VariantModifierModal.jsx</c> <c>toggleModifier</c>.</summary>
 public sealed partial class ModifierGroupSelectionViewModel : ViewModelBase
 {
     private readonly Action _onChanged;
@@ -68,19 +63,12 @@ public sealed partial class ModifierGroupSelectionViewModel : ViewModelBase
         {
             option.SetSelectedInternal(true);
         }
-        // else: at max already — blocked, matching the web modal's behaviour.
 
         OnPropertyChanged(nameof(SelectedCount));
         OnPropertyChanged(nameof(IsSatisfied));
         _onChanged();
     }
 }
-
-/// <summary>
-/// Variant + modifier picker, ported from <c>VariantModifierModal.jsx</c>. Shown only
-/// when <see cref="CatalogProduct.NeedsPicker"/> is true; a single-variant, no-modifier
-/// product goes straight into the cart without this dialog.
-/// </summary>
 public sealed partial class VariantModifierDialogViewModel : ViewModelBase
 {
     public VariantModifierDialogViewModel(CatalogProduct product, IReadOnlyList<ModifierGroupOptions> modifierGroups)
