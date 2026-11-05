@@ -1,11 +1,5 @@
 namespace Pos.Infra.Storage.Migrations;
 
-/// <summary>
-/// Phase 3: the two tables printing needs that have no catalog-entity equivalent —
-/// both are singletons (always exactly one row, enforced by always writing to the same
-/// fixed id, never by a schema constraint — simplest way to model "there is only one of
-/// these on this terminal").
-/// </summary>
 internal static class Migration0003Printer
 {
     public const int Version = 3;

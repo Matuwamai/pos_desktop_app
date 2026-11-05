@@ -9,14 +9,6 @@ using Pos.Infra.Storage;
 
 namespace Pos.Infra.Sync;
 
-/// <summary>
-/// The pull side of offline-first: repeatedly calls <c>GET /sync/pull</c> starting from
-/// the cursor stored in <c>meta</c>, upserting every page into SQLite, until the server
-/// says <c>hasMore: false</c> — then the cursor is saved as <c>nextSince</c> for next
-/// time. A row is never deleted locally from a pull: the server's tombstone is
-/// <c>isActive: false</c>, which upserts like anything else (callers filter it out when
-/// reading, same as the server's own admin UI would).
-/// </summary>
 public sealed class SyncEngine(LocalDatabase db, ApiClient api)
 {
     private const string CursorKey = "sync_since";
@@ -42,14 +34,6 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
         await SetMetaAsync(LastSyncedKey, serverTime.ToString("O"), ct);
         return new SyncResult(pages, since, serverTime);
     }
-
-    /// <summary>Drains the local outbox: every <c>PENDING</c> row (batched ≤100, the
-    /// server's per-push limit), pushed as-is — the JSON written at sale/drawer/customer
-    /// creation time round-trips verbatim, never rebuilt here. Each result updates the
-    /// outbox row and, for an <c>order.create</c> op, the matching local order's
-    /// <c>sync_status</c> (a no-op update for other op types, since they have no
-    /// matching <c>orders.op_id</c>). A <c>REJECTED</c> op is left exactly as it is, not
-    /// retried automatically — same reasoning as the server's own push design.</summary>
     public async Task<PushResult> PushPendingAsync(string deviceToken, CancellationToken ct = default)
     {
         var pending = await LoadPendingOutboxAsync(ct);
@@ -77,23 +61,11 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
         await tx.CommitAsync(ct);
         return new PushResult(created, duplicate, rejected);
     }
-
-    /// <summary>Push, then pull — in that order, so the pull's inventory numbers already
-    /// reflect whatever this terminal just pushed, not a stale pre-push snapshot.</summary>
     public async Task<SyncResult> SyncNowAsync(string deviceToken, CancellationToken ct = default)
     {
         await PushPendingAsync(deviceToken, ct);
         return await PullAllAsync(deviceToken, ct);
     }
-
-    /// <summary>
-    /// Creates a customer <b>online only</b> — a direct, single-op push, not queued
-    /// through the outbox like <see cref="PushPendingAsync"/> drains. Nothing is written
-    /// locally unless the server actually confirms it (see the Phase 2 plan's decision
-    /// #4): a customer isn't a sale, there's no "write it now, reconcile later" fallback
-    /// for it in v1, so a connectivity failure here is reported back as-is rather than
-    /// silently queued.
-    /// </summary>
     public async Task<CustomerCreateResult> CreateCustomerAsync(string deviceToken, string name, string? phone, string? email, CancellationToken ct = default)
     {
         var id = Guid.NewGuid().ToString();
@@ -136,13 +108,6 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
             : "The server rejected this customer.";
         return new CustomerCreateResult(false, null, error);
     }
-
-    /// <summary>
-    /// Runs after <see cref="ApplyAsync"/>'s transaction commits — this does a network
-    /// call, which has no business happening inside an open SQLite write transaction.
-    /// Best-effort: a failure here (offline, 404, whatever) just means printing falls
-    /// back to no logo until the next pull that succeeds, never blocks the pull itself.
-    /// </summary>
     private async Task SyncTenantLogoAsync(TenantRow tenant, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(tenant.LogoUrl)) return;
@@ -176,8 +141,6 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
         updateCmd.Parameters.AddWithValue("$id", TenantSingletonId);
         await updateCmd.ExecuteNonQueryAsync(ct);
     }
-
-    /// <summary>Sales not yet confirmed by the server — drives the status bar's pending count.</summary>
     public async Task<int> GetPendingSaleCountAsync(CancellationToken ct = default)
     {
         await using var cmd = db.Connection.CreateCommand();
@@ -211,9 +174,6 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
         cmd.Parameters.AddWithValue("$opId", opId);
         await cmd.ExecuteNonQueryAsync(ct);
     }
-
-    // A no-op (0 rows affected) for op types with no matching order, e.g. drawer.open or
-    // customer.create — deliberately unconditional rather than branching on op type.
     private static async Task UpdateOrderSyncStatusAsync(SqliteTransaction tx, string opId, string status, CancellationToken ct)
     {
         await using var cmd = tx.Connection!.CreateCommand();
@@ -225,9 +185,6 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
     }
 
     private sealed record PendingOutboxRow(string OpId, string Type, string PayloadJson, DateTimeOffset ClientTime);
-
-    /// <summary>Null if this device has never completed a pull. Drives the offline PIN
-    /// login's max-offline-window check (<see cref="Pos.Infra.Auth.PinVerifier"/>).</summary>
     public async Task<DateTimeOffset?> GetLastSyncedAtAsync(CancellationToken ct = default)
     {
         await using var cmd = db.Connection.CreateCommand();
@@ -317,11 +274,6 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
             await UpsertAsync(tx, "users", "id",
                 ("id", u.Id), ("name", u.Name), ("role", u.Role), ("permissions_json", System.Text.Json.JsonSerializer.Serialize(u.Permissions)),
                 ("pin_hash", u.PinHash), ("must_change_password", SqlFormat.Bool(u.MustChangePassword)), ("updated_at", u.UpdatedAt));
-
-        // logo_local_path is deliberately NOT in this column list — SyncLogoIfNeededAsync
-        // (run after this transaction commits, since it does a network call) owns that
-        // column separately, so re-upserting the tenant's text fields on every pull never
-        // clobbers an already-cached logo path.
         if (entities.Tenant is { } tenant)
             await UpsertAsync(tx, "tenant", "id", ("id", TenantSingletonId), ("name", tenant.Name), ("logo_url", tenant.LogoUrl),
                 ("currency", tenant.Currency),
@@ -330,9 +282,6 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
 
         await tx.CommitAsync(ct);
     }
-
-    // internal: SaleService reuses this for order-table writes too (ON CONFLICT DO UPDATE
-    // is harmless for a fresh insert, and gives idempotency for free if a write ever ran twice).
     internal static async Task UpsertAsync(SqliteTransaction tx, string table, string keyColumn, params (string Column, object? Value)[] columns)
     {
         var columnNames = string.Join(", ", columns.Select(c => c.Column));

@@ -3,12 +3,6 @@ using Pos.Core.Interfaces;
 
 namespace Pos.Infra.Secrets;
 
-/// <summary>
-/// The enrollment record a terminal needs to skip the Setup wizard on every launch:
-/// the server URL, which terminal this device *is*, and its device token (the token
-/// itself goes through <see cref="ISecretStore"/>; everything else is not secret and
-/// is stored alongside it as plain JSON under <see cref="AppPaths.SecretsDirectory"/>).
-/// </summary>
 public sealed record DeviceEnrollment(string ServerUrl, string TerminalId, string LocationId, string TenantSubdomain);
 
 public sealed class DeviceSessionStore(ISecretStore secrets, string directory)

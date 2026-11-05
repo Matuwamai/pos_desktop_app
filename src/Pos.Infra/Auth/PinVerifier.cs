@@ -15,14 +15,6 @@ public enum PinLoginResult
     OfflineWindowExpired,
 }
 
-/// <summary>
-/// Verifies a cashier's PIN against the bcrypt hash pulled down in the roster
-/// (<c>services/sync.js</c> sends <c>pinHash</c>, never a password hash) and enforces
-/// the max-offline-window policy from the Phase 0/1 plan: once this device hasn't
-/// completed a pull in <see cref="MaxOfflineWindow"/>, PIN login is refused — the
-/// cashier must get the device online (a pull, which also refreshes the roster and
-/// catches a revoked/deactivated account) before it will unlock again.
-/// </summary>
 public sealed class PinVerifier(LocalDatabase db, SyncEngine sync)
 {
     public static readonly TimeSpan MaxOfflineWindow = TimeSpan.FromDays(7);
@@ -43,9 +35,6 @@ public sealed class PinVerifier(LocalDatabase db, SyncEngine sync)
         var mustChangePassword = reader.GetInt32(5) != 0;
         var permissions = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reader.GetString(3)) ?? [];
         var user = new RosterUser(reader.GetString(0), reader.GetString(1), reader.GetString(2), permissions, mustChangePassword);
-
-        // Mirrors services/offlineSync.js's assertCashier: a forced password change
-        // can only be satisfied online, so offline PIN login is refused until then.
         if (mustChangePassword) return (PinLoginResult.MustChangePasswordOnline, user);
         if (string.IsNullOrEmpty(pinHash) || !BCrypt.Net.BCrypt.Verify(pin, pinHash)) return (PinLoginResult.WrongPin, user);
 

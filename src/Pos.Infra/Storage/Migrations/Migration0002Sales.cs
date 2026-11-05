@@ -1,15 +1,5 @@
 namespace Pos.Infra.Storage.Migrations;
 
-/// <summary>
-/// Phase 2: local sales tables, mirroring the server's Order/OrderItem/
-/// OrderItemModifier/OrderDiscount/Payment/CashDrawerSession fields
-/// (server/prisma/schema.prisma) plus two columns the server has no equivalent for —
-/// <c>orders.sync_status</c> and <c>orders.op_id</c> — so "how many sales are waiting to
-/// sync" is a plain query against <c>orders</c>, with no join against <c>outbox</c>
-/// needed. <c>held_tickets</c> has no server counterpart at all (see Cart.cs / the Phase 2
-/// plan notes: the server's <c>OrderStatus.PARKED</c> is dead enum surface, never
-/// implemented) — holding a sale is purely a local concept here.
-/// </summary>
 internal static class Migration0002Sales
 {
     public const int Version = 2;

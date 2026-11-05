@@ -10,9 +10,6 @@ public static class PrinterTransportKind
     public const string Serial = "SERIAL";
     public const string System = "SYSTEM";
 }
-
-/// <summary>A terminal's printer configuration — a singleton row in <c>printer_settings</c>.
-/// Only the fields for <see cref="Transport"/> are meaningful; the rest sit null/default.</summary>
 public sealed record PrinterSettings(
     string Transport,
     string? NetworkHost,

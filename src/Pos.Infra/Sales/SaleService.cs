@@ -12,15 +12,6 @@ namespace Pos.Infra.Sales;
 
 public sealed record SaleResult(string OrderId, string TerminalReceiptNo, OrderTotals Totals);
 public sealed record OpenDrawerSession(string Id, decimal OpeningFloat, DateTimeOffset OpenedAt);
-
-/// <summary>
-/// The one local-first write path for everything a cashier does that has to reach the
-/// server eventually: ring up a sale, open the drawer, close the drawer. Each writes its
-/// local rows and an <c>outbox</c> row in the same SQLite transaction — the write
-/// succeeds or none of it does, and whether the server is reachable right now never
-/// changes what gets written, only when <see cref="SyncEngine.PushPendingAsync"/>
-/// actually gets it there (see the Phase 2 plan's "one write path" decision).
-/// </summary>
 public sealed class SaleService(LocalDatabase db, string terminalId)
 {
     public async Task<SaleResult> RingUpSaleAsync(

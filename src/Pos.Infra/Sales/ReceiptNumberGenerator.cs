@@ -3,13 +3,6 @@ using Microsoft.Data.Sqlite;
 
 namespace Pos.Infra.Sales;
 
-/// <summary>
-/// Terminal-local receipt numbers — <c>T{terminalId[..8]}-{yyyyMMdd}-{seq:0000}</c>, per
-/// the Phase 2 plan. The sequence resets implicitly: it's keyed by date in <c>meta</c>, so
-/// a new day starts back at 1 without any explicit reset logic. Takes the caller's open
-/// <see cref="SqliteTransaction"/> so the counter bump is part of the same transaction as
-/// the order it numbers — two sales can never race onto the same number.
-/// </summary>
 public static class ReceiptNumberGenerator
 {
     public static async Task<string> NextAsync(SqliteConnection connection, SqliteTransaction tx, string terminalId, DateTimeOffset now, CancellationToken ct = default)

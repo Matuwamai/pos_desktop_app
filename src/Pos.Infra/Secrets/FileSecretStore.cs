@@ -3,15 +3,6 @@ using Pos.Core.Interfaces;
 
 namespace Pos.Infra.Secrets;
 
-/// <summary>
-/// <see cref="ISecretStore"/> backed by ASP.NET Core Data Protection: each secret is
-/// protected (AES, machine-specific key ring under <c>secrets/keys/</c>) and written as
-/// its own file under <c>secrets/</c>. Cross-platform and dependency-light, unlike an
-/// OS keychain — the trade-off (Phase 5 risk, noted in the plan) is that the key ring
-/// itself lives on disk next to the app, so a stolen device plus a stolen disk defeats
-/// it; that's why the local database is also encrypted and offline logins have a max
-/// window, not relied on alone.
-/// </summary>
 public sealed class FileSecretStore : ISecretStore
 {
     private readonly string _directory;

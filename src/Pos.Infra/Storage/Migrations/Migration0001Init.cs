@@ -1,11 +1,6 @@
 namespace Pos.Infra.Storage.Migrations;
 
-/// <summary>
-/// First schema version: the sync cursor/meta table, one table per catalog entity the
-/// pull endpoint sends (named after <c>PullEntities</c> in Pos.Core), and the outbox for
-/// offline sales/drawer actions not yet pushed. Columns mirror the pull DTOs; money/qty
-/// columns are TEXT (SQLite has no native decimal) so they round-trip exactly — never REAL.
-/// </summary>
+
 internal static class Migration0001Init
 {
     public const int Version = 1;
