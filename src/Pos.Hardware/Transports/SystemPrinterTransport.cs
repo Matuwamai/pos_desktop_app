@@ -5,26 +5,10 @@ using Pos.Core.Interfaces;
 
 namespace Pos.Hardware.Transports;
 
-/// <summary>
-/// Hands raw bytes to the OS's own print spooler, for a printer installed as a normal
-/// system printer rather than addressed directly. Branches at runtime via
-/// <see cref="OperatingSystem.IsWindows"/>, not a compile-time <c>#if</c> — this is one
-/// cross-platform assembly, and a P/Invoke to a Windows-only DLL simply never gets
-/// *called* on another OS, which is all that matters (the method reference itself
-/// resolving lazily is fine). The Windows path is code-reviewed only — there is no
-/// Windows machine available to verify it against a real spooler in this environment,
-/// unlike the Linux/CUPS path below, which is live-tested (`lp`/`lpr`/`lpstat` are
-/// confirmed installed on the dev box this was built on).
-/// </summary>
 public sealed class SystemPrinterTransport(string printerName) : IPrinterTransport
 {
     public Task WriteAsync(byte[] data, CancellationToken ct = default) =>
         OperatingSystem.IsWindows() ? WriteWindowsAsync(data) : WriteCupsAsync(data, ct);
-
-    // CUPS's `-o raw` tells it to pass the bytes straight to the printer with no
-    // filtering/reformatting — exactly what a hand-built ESC/POS stream needs. Piping
-    // through a child process rather than talking to libcups directly keeps this
-    // dependency-free and is how most non-GUI raw-print integrations on Linux work.
     private async Task WriteCupsAsync(byte[] data, CancellationToken ct)
     {
         var psi = new ProcessStartInfo("lp", ["-d", printerName, "-o", "raw"])

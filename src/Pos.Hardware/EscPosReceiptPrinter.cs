@@ -3,12 +3,6 @@ using Pos.Hardware.EscPos;
 
 namespace Pos.Hardware;
 
-/// <summary>
-/// The one <see cref="IReceiptPrinter"/> implementation — ESC/POS over whichever
-/// <see cref="IPrinterTransport"/> is configured. Converts the logo once per print (not
-/// cached here; <see cref="ReceiptDocument.LogoImageBytes"/> is already whatever the
-/// sync engine last cached, so re-converting per print is cheap enough not to bother).
-/// </summary>
 public sealed class EscPosReceiptPrinter(IPrinterTransport transport, PrinterProfile profile) : IReceiptPrinter
 {
     public async Task PrintAsync(ReceiptDocument receipt, CancellationToken ct = default)

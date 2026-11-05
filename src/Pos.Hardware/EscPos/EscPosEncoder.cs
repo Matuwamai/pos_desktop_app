@@ -5,12 +5,6 @@ using Pos.Core.Pricing;
 
 namespace Pos.Hardware.EscPos;
 
-/// <summary>
-/// Builds the complete ESC/POS byte stream for one receipt — hand-written, not a
-/// third-party library, per the plan: small and directly testable against
-/// <c>MemoryPrinterTransport</c>/<c>FilePrinterTransport</c> with exact golden-byte
-/// assertions (see <c>EscPosEncoderTests</c>).
-/// </summary>
 public static class EscPosEncoder
 {
     public static byte[] EncodeReceipt(ReceiptDocument receipt, PrinterProfile profile, byte[]? logoRaster)
@@ -49,8 +43,6 @@ public static class EscPosEncoder
 
         Write(EscPosCommands.Align(TextAlign.Left));
         WriteLine(rule);
-        // A plain hyphen, not a middle dot — Sanitize() below maps anything above
-        // ASCII 127 to '?', which would otherwise mangle a nicer separator.
         WriteLine($"Receipt {receipt.TerminalReceiptNo} - {receipt.Currency}");
         WriteLine($"Served by {receipt.CashierName}");
         if (receipt.CustomerName is { Length: > 0 }) WriteLine($"Customer: {receipt.CustomerName}");
@@ -88,10 +80,6 @@ public static class EscPosEncoder
     }
 
     public static byte[] EncodeDrawerKick() => EscPosCommands.DrawerKick();
-
-    /// <summary>Left-aligned label, right-aligned value, padded to fill exactly
-    /// <paramref name="width"/> columns (at least one space between them even if the
-    /// combined text would otherwise overflow).</summary>
     private static string Columns(string left, string right, int width)
     {
         var padding = Math.Max(1, width - left.Length - right.Length);
@@ -100,10 +88,7 @@ public static class EscPosEncoder
 
     private static string Truncate(string text, int width) => text.Length <= width ? text : text[..width];
 
-    // Thermal printers vary in code page support; ASCII is the one encoding every
-    // ESC/POS printer is guaranteed to render correctly without a code-page switch
-    // command first. Non-ASCII characters (accented names, etc.) degrade to '?' rather
-    // than risk garbled output on a printer configured for a different page.
+
     private static string Sanitize(string text)
     {
         Span<char> buffer = text.Length <= 256 ? stackalloc char[text.Length] : new char[text.Length];
