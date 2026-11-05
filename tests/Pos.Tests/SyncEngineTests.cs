@@ -8,12 +8,6 @@ using Pos.Infra.Sync;
 
 namespace Pos.Tests;
 
-/// <summary>
-/// The pull side of offline-first, against a fake server: pagination via
-/// <c>hasMore</c>/<c>nextSince</c>, the cursor surviving a restart, and a tombstone
-/// (<c>isActive: false</c>) landing as an ordinary upsert — never a delete, matching
-/// the server's own soft-deactivation model.
-/// </summary>
 public class SyncEngineTests : IAsyncDisposable
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"pos-sync-test-{Guid.NewGuid():N}.db");
@@ -149,9 +143,6 @@ public class SyncEngineTests : IAsyncDisposable
         await Task.CompletedTask;
     }
 
-    /// <summary>Answers <c>GET sync/pull?since=N&amp;limit=...</c> from a canned queue, keyed
-    /// by the expected <c>since</c> — asserts the engine asked for the right page rather
-    /// than silently returning whatever is next in the queue.</summary>
     private sealed class FakeServerHandler(Queue<(long Since, PullResponse Response)> pages) : HttpMessageHandler
     {
         private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

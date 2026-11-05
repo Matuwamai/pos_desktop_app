@@ -4,21 +4,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <!-- Warnings as errors locally and in CI, but not inside an IDE design-time build
-         (VS/Rider run those constantly while typing; failing them would be noise). -->
     <TreatWarningsAsErrors Condition="'$(BuildingInsideVisualStudio)' != 'true'">true</TreatWarningsAsErrors>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
-    <!-- Target RIDs are declared per-publish (`dotnet publish -r <rid>`), not here —
-         listing them in RuntimeIdentifiers makes even a plain `dotnet build` restore
-         every OS's self-contained runtime pack (hundreds of MB, four times over). The
-         CI matrix (ubuntu/windows/macos) builds+tests on each native runner instead;
-         win-x64/linux-x64/linux-arm64/osx-arm64 are the Phase 5 publish targets. -->
     <InvariantGlobalization>false</InvariantGlobalization>
     <Deterministic>true</Deterministic>
-    <!-- Overridden per-release by release.yml's `-p:Version=<tag-without-v>`; this is
-         just the default for a plain local/CI build. -->
     <Version>0.1.0</Version>
   </PropertyGroup>
 

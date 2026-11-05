@@ -3,12 +3,6 @@ using Pos.Infra.Api;
 
 namespace Pos.Tests;
 
-/// <summary>Regression coverage for Phase 6's device-revoked detection
-/// (ApiClient.EnsureSuccessAsync) — a 401 must throw the specific
-/// <see cref="DeviceUnauthorizedException"/> subclass so callers (AppViewModel,
-/// CashierViewModel) can react to it distinctly from an ordinary network failure,
-/// while every other non-success status keeps throwing the plain
-/// <see cref="ApiClientException"/> exactly as before this change.</summary>
 public class ApiClientTests
 {
     private static ApiClient FakeApi(HttpStatusCode status) =>

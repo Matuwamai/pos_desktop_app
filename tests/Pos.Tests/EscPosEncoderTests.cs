@@ -6,11 +6,6 @@ using Pos.Hardware.Transports;
 
 namespace Pos.Tests;
 
-/// <summary>
-/// Golden-byte assertions against <see cref="EscPosEncoder"/>, via
-/// <see cref="MemoryPrinterTransport"/> — exactly what the original plan meant by "memory/
-/// file transport enables golden-byte tests."
-/// </summary>
 public class EscPosEncoderTests
 {
     private static ReceiptDocument SampleReceipt(string tenantName = "Acme Coffee", string? customerName = null, string currency = "USD") => new(

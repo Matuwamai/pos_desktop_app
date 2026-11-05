@@ -5,14 +5,6 @@ using Pos.Infra.Json;
 
 namespace Pos.Tests;
 
-/// <summary>
-/// Cart → OfflineOrderPayload, the conversion <see cref="Pos.Infra.Sales.SaleService"/>
-/// sends to <c>sync/push</c>. Two things matter here that the pricing-math tests alone
-/// don't cover: the payload's <c>unitPrice</c> is base price *plus* modifiers (see
-/// <see cref="Cart.ToOfflineOrderPayload"/>'s doc comment — the server's offline path has
-/// no separate modifiers field to add back in), and every field name on the wire has to
-/// match <c>ORDER_PAYLOAD</c> in <c>server/services/offlineSync.js</c> exactly.
-/// </summary>
 public class CartTests
 {
     private static Cart BuildCart()
@@ -20,13 +12,23 @@ public class CartTests
         var cart = new Cart { CustomerId = "customer-1", CustomerName = "Jane", DiscountAmount = 1.50m, DiscountReason = "loyalty" };
         cart.Items.Add(new CartLine
         {
-            VariantId = "variant-1", ProductName = "Latte", Sku = "LATTE-001",
-            BaseUnitPrice = 9.99m, Modifiers = [new CartModifier("mod-1", "Extra shot", 0.50m)], Quantity = 3, TaxRate = 0.16m,
+            VariantId = "variant-1",
+            ProductName = "Latte",
+            Sku = "LATTE-001",
+            BaseUnitPrice = 9.99m,
+            Modifiers = [new CartModifier("mod-1", "Extra shot", 0.50m)],
+            Quantity = 3,
+            TaxRate = 0.16m,
         });
         cart.Items.Add(new CartLine
         {
-            VariantId = "variant-2", ProductName = "Croissant", Sku = "CROI-001",
-            BaseUnitPrice = 2.50m, Modifiers = [], Quantity = 1, TaxRate = null,
+            VariantId = "variant-2",
+            ProductName = "Croissant",
+            Sku = "CROI-001",
+            BaseUnitPrice = 2.50m,
+            Modifiers = [],
+            Quantity = 1,
+            TaxRate = null,
         });
         return cart;
     }
@@ -52,9 +54,6 @@ public class CartTests
 
         foreach (var item in payload.Items)
         {
-            // Mirrors importOfflineOrder's own check exactly: lineSubtotal = round2(unitPrice
-            // * quantity); lineSubtotal + taxAmount must equal lineTotal, or the sale is
-            // rejected as tampered/corrupted.
             var lineSubtotal = Math.Round(item.UnitPrice * item.Quantity, 2, MidpointRounding.AwayFromZero);
             Assert.Equal(item.LineTotal, Math.Round(lineSubtotal + item.TaxAmount, 2, MidpointRounding.AwayFromZero));
         }
@@ -106,10 +105,9 @@ public class CartTests
     [Fact]
     public void No_optional_field_is_ever_written_as_a_literal_null()
     {
-        // Same confirmed-live bug class as SyncJsonTests, replayed through the real
-        // Cart -> payload path rather than a hand-built OfflineOrderPayload.
         var cart = BuildCart();
-        cart.CustomerId = null; // the exact field that came back REJECTED in production before the fix
+        cart.CustomerId = null;
+
         var payload = BuildPayload(cart);
 
         var json = JsonSerializer.Serialize(payload, SyncJson.Options);

@@ -123,18 +123,11 @@ public class PaymentDialogViewModelTests
         Assert.Equal("", vm.Lines[0].TransactionRef);
         Assert.False(vm.CanSubmit);
     }
-
-    /// <summary>Throws if called at all — proves client-side validation (an invalid
-    /// phone number) never reaches the network.</summary>
     private sealed class ThrowingHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
             throw new InvalidOperationException("No HTTP call was expected for this input");
     }
-
-    /// <summary>Answers a fixed, ordered sequence of (method, path-suffix) -> JSON
-    /// responses — asserts the dialog called the right endpoint in the right order
-    /// rather than silently returning whatever is next in the queue.</summary>
     private sealed class SequencedHandler(params (HttpMethod Method, string PathSuffix, string Json)[] steps) : HttpMessageHandler
     {
         private int _index;

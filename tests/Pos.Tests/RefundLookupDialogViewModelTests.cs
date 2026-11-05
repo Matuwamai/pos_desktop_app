@@ -35,8 +35,6 @@ public class RefundLineViewModelTests
     [Fact]
     public void RefundAmountPreview_is_proportional_to_the_original_line_total()
     {
-        // 3 sold for a line total of 3.75 (1.25 each) — refunding 2 should preview 2.50,
-        // same formula the web app's RefundModal.jsx already uses.
         var line = new RefundLineViewModel("item-1", "Pen", soldQty: 3, alreadyRefundedQty: 0, lineTotal: 3.75m);
         line.RefundQtyText = "2";
         Assert.Equal(2.50m, line.RefundAmountPreview);

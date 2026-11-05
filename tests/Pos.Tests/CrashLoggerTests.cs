@@ -7,9 +7,6 @@ public class CrashLoggerTests
     [Fact]
     public void FilesToDelete_keeps_only_the_20_most_recent_by_name()
     {
-        // The timestamp is encoded in the filename itself (crash-yyyyMMdd-HHmmss-fff.log),
-        // so ordinal string order is chronological order — these don't need to be real
-        // timestamps for the rule to be exercised correctly.
         var files = Enumerable.Range(1, 25).Select(i => $"crash-{i:D2}.log").ToList();
 
         var toDelete = CrashLogger.FilesToDelete(files).ToList();

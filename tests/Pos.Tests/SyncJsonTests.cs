@@ -4,13 +4,6 @@ using Pos.Infra.Json;
 
 namespace Pos.Tests;
 
-/// <summary>
-/// Confirmed live, not hypothetical: before <c>SyncJson.Options</c> ignored null when
-/// writing, every real sale from the desktop app came back <c>REJECTED</c> — the
-/// server's zod schemas mark these fields <c>.optional()</c> (may be *absent*), not
-/// <c>.nullable()</c>, so an explicit JSON <c>null</c> fails validation with "expected
-/// string, received null." These tests pin that behaviour so it can't regress silently.
-/// </summary>
 public class SyncJsonTests
 {
     [Fact]
@@ -38,6 +31,6 @@ public class SyncJsonTests
         Assert.DoesNotContain("customerId", json);
         Assert.DoesNotContain("cashDrawerSessionId", json);
         Assert.DoesNotContain("transactionRef", json);
-        Assert.DoesNotContain("null", json); // nothing in this payload should ever serialize as the literal null
+        Assert.DoesNotContain("null", json);
     }
 }

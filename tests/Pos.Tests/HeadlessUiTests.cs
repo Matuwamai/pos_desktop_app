@@ -12,22 +12,6 @@ using Pos.Infra.Sync;
 
 namespace Pos.Tests;
 
-/// <summary>
-/// Renders the setup screen and the (Phase 1) product list to PNG with no display server —
-/// a smoke test, not a pixel-perfect snapshot test: it proves each screen's XAML parses, its
-/// bindings resolve against a real view model, and layout completes without throwing.
-///
-/// Bootstraps the headless Avalonia app itself (a static constructor, once per test run)
-/// rather than via Avalonia.Headless.XUnit's [AvaloniaFact]: that package currently pulls in
-/// xunit.v3, which collides with this project's xunit v2 (FactAttribute defined in both).
-///
-/// Every test in this class that touches an Avalonia dispatcher-bound type (constructing
-/// a CashierViewModel, a Window, rendering) does so on the same thread that ran this
-/// static constructor — whatever thread first instantiates this class. A different test
-/// class doing the same from a different thread races Avalonia's dispatcher ownership
-/// ("the calling thread cannot access this object because a different thread owns it"),
-/// so any such test belongs here, not in a separate class.
-/// </summary>
 public class HeadlessUiTests
 {
     static HeadlessUiTests()
@@ -52,13 +36,8 @@ public class HeadlessUiTests
     [Fact]
     public void CashierView_with_catalog_and_cart_renders()
     {
-        // AppBuilder.SetupWithoutStarting() (the static ctor above) installs an Avalonia
-        // dispatcher SynchronizationContext on this thread. Awaiting directly in a [Fact]
-        // would post each continuation to that dispatcher's queue, which nothing is
-        // pumping until *after* the await — a deadlock. Task.Run hands the async setup to
-        // a thread-pool thread with no such context, so it runs to completion normally;
-        // only the UI construction below (window, render) touches the dispatcher thread.
-#pragma warning disable xUnit1031 // intentional: see the comment above — this is what avoids the deadlock, not what causes it
+
+#pragma warning disable xUnit1031 
         var (vm, tempDir) = Task.Run(SetUpCashierViewModelAsync).GetAwaiter().GetResult();
 #pragma warning restore xUnit1031
 
@@ -72,7 +51,7 @@ public class HeadlessUiTests
         }
         finally
         {
-            vm.StopBackgroundSync(); // otherwise its 30s DispatcherTimer outlives this test, in the same test process
+            vm.StopBackgroundSync();
         }
     }
 

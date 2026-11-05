@@ -5,9 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <!-- CA1707 (no underscores in identifiers) fights the xUnit convention of
-         naming test methods like a sentence (Method_condition_expectedResult) —
-         suppressed here only, not for the shipping projects. -->
     <NoWarn>$(NoWarn);CA1707</NoWarn>
   </PropertyGroup>
 
@@ -30,11 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Renders Avalonia views off-screen (no display server needed — this is what lets
-         the UI smoke test run in CI). Not Avalonia.Headless.XUnit: that package pulls in
-         xunit.v3, which collides with this project's xunit v2 (FactAttribute defined in
-         both) — HeadlessUiTests bootstraps the headless app itself instead, with plain
-         [Fact]. -->
     <PackageReference Include="Avalonia.Headless" Version="12.1.4" />
   </ItemGroup>
 

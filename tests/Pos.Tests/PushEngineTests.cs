@@ -8,12 +8,6 @@ using Pos.Infra.Sync;
 
 namespace Pos.Tests;
 
-/// <summary>
-/// The push side of offline-first, against a fake server: draining the outbox, and what
-/// happens to the matching local <c>orders</c> row (via its <c>op_id</c>) on
-/// <c>CREATED</c> vs. <c>REJECTED</c>. Mirrors <c>SyncEngineTests</c>' fake-handler
-/// pattern for the pull side.
-/// </summary>
 public class PushEngineTests : IAsyncDisposable
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"pos-push-test-{Guid.NewGuid():N}.db");
