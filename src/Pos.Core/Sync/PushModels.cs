@@ -69,46 +69,49 @@ public sealed class OfflineOrderDiscount
     public decimal Amount { get; set; }
     public string? Reason { get; set; }
     public string? PromotionCode { get; set; }
-    public static class OfflinePaymentMethod
-    {
-        public const string Cash = "CASH";
-        public const string Card = "CARD";
-        public const string Mpesa = "MPESA";
-        public const string GiftCard = "GIFT_CARD";
-        public const string StoreCredit = "STORE_CREDIT";
-        public const string Other = "OTHER";
-    }
+}
 
-    public sealed class OfflineOrderPayment
-    {
-        public string Method { get; set; } = OfflinePaymentMethod.Cash;
-        public decimal Amount { get; set; }
-        public string? TransactionRef { get; set; }
+public static class OfflinePaymentMethod
+{
+    public const string Cash = "CASH";
+    public const string Card = "CARD";
+    public const string Mpesa = "MPESA";
+    public const string GiftCard = "GIFT_CARD";
+    public const string StoreCredit = "STORE_CREDIT";
+    public const string Other = "OTHER";
+}
 
-        /// <summary>Required by the server when <see cref="Method"/> is <see cref="OfflinePaymentMethod.GiftCard"/>.</summary>
-        public string? GiftCardCode { get; set; }
-    }
+public sealed class OfflineOrderPayment
+{
+    public string Method { get; set; } = OfflinePaymentMethod.Cash;
+    public decimal Amount { get; set; }
+    public string? TransactionRef { get; set; }
 
-    public sealed class DrawerOpenPayload
-    {
-        public string Id { get; set; } = "";
-        public string LocationId { get; set; } = "";
-        public string CashierId { get; set; } = "";
-        public decimal OpeningFloat { get; set; }
-        public DateTimeOffset OpenedAt { get; set; }
-    }
+    /// <summary>Required by the server when <see cref="Method"/> is <see cref="OfflinePaymentMethod.GiftCard"/>.</summary>
+    public string? GiftCardCode { get; set; }
+}
 
-    public sealed class DrawerClosePayload
-    {
-        public string Id { get; set; } = "";
-        public string CashierId { get; set; } = "";
-        public decimal ClosingCash { get; set; }
-        public DateTimeOffset ClosedAt { get; set; }
-    }
-    public sealed class CustomerCreatePayload
-    {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string? Phone { get; set; }
-        public string? Email { get; set; }
-    }
+public sealed class DrawerOpenPayload
+{
+    public string Id { get; set; } = "";
+    public string LocationId { get; set; } = "";
+    public string CashierId { get; set; } = "";
+    public decimal OpeningFloat { get; set; }
+    public DateTimeOffset OpenedAt { get; set; }
+}
+
+public sealed class DrawerClosePayload
+{
+    public string Id { get; set; } = "";
+    public string CashierId { get; set; } = "";
+    public decimal ClosingCash { get; set; }
+    public DateTimeOffset ClosedAt { get; set; }
+}
+
+public sealed class CustomerCreatePayload
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? Phone { get; set; }
+    public string? Email { get; set; }
+}
