@@ -27,7 +27,7 @@ public static class EscPosEncoder
 
         Write(EscPosCommands.Initialize);
 
-        if (logoRaster is not null)
+        if (receipt.ShowLogo && logoRaster is not null)
         {
             Write(EscPosCommands.Align(TextAlign.Center));
             Write(logoRaster);
@@ -44,8 +44,8 @@ public static class EscPosEncoder
         Write(EscPosCommands.Align(TextAlign.Left));
         WriteLine(rule);
         WriteLine($"Receipt {receipt.TerminalReceiptNo} - {receipt.Currency}");
-        WriteLine($"Served by {receipt.CashierName}");
-        if (receipt.CustomerName is { Length: > 0 }) WriteLine($"Customer: {receipt.CustomerName}");
+        if (receipt.ShowCashierName) WriteLine($"Served by {receipt.CashierName}");
+        if (receipt.ShowCustomerName && receipt.CustomerName is { Length: > 0 }) WriteLine($"Customer: {receipt.CustomerName}");
         WriteLine(rule);
 
         foreach (var line in receipt.Lines)
@@ -73,7 +73,7 @@ public static class EscPosEncoder
 
         WriteLine(rule);
         Write(EscPosCommands.Align(TextAlign.Center));
-        WriteLine("Thank you for your business!");
+        WriteLine(receipt.FooterMessage is { Length: > 0 } ? receipt.FooterMessage : "Thank you for your business!");
         WriteLine();
         WriteLine();
 

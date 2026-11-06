@@ -40,6 +40,10 @@ public sealed partial class CashierViewModel : ViewModelBase
     private string? _mpesaShortcode;
     private bool _mpesaStkConfigured;
     private bool _stripeConfigured;
+    private string? _receiptFooterMessage;
+    private bool _receiptShowCustomerName = true;
+    private bool _receiptShowCashierName = true;
+    private bool _receiptShowLogo = true;
     private IReceiptPrinter? _printer;
     private bool _openDrawerOnCash;
     private bool _deviceInvalidated;
@@ -328,7 +332,9 @@ public sealed partial class CashierViewModel : ViewModelBase
             Lines: [.. _cart.Items.Select(i => new ReceiptLine(i.ProductName, i.Modifiers.Count == 0 ? null : string.Join(", ", i.Modifiers.Select(m => m.Name)), i.Quantity, i.BaseUnitPrice + i.ModifiersTotal, i.Quantity * (i.BaseUnitPrice + i.ModifiersTotal), _cart.DecimalDigits))],
             Subtotal: result.Totals.Subtotal, DiscountTotal: result.Totals.DiscountTotal, TaxTotal: result.Totals.TaxTotal, Total: result.Totals.Total,
             Payments: [.. payments.Select(p => new ReceiptPayment(p.Method, p.Amount, _cart.DecimalDigits))],
-            CashRoundingAdjustment: result.Totals.CashRoundingAdjustment);
+            CashRoundingAdjustment: result.Totals.CashRoundingAdjustment,
+            FooterMessage: _receiptFooterMessage, ShowCustomerName: _receiptShowCustomerName,
+            ShowCashierName: _receiptShowCashierName, ShowLogo: _receiptShowLogo);
 
 
         if (_printer is not null)
@@ -461,7 +467,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     private async Task LoadTenantAsync()
     {
         await using var cmd = _db.Connection.CreateCommand();
-        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured, currency, stripe_configured, cash_rounding_unit FROM tenant WHERE id = 'self'";
+        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured, currency, stripe_configured, cash_rounding_unit, receipt_footer_message, receipt_show_customer_name, receipt_show_cashier_name, receipt_show_logo FROM tenant WHERE id = 'self'";
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync()) return;
 
@@ -477,6 +483,10 @@ public sealed partial class CashierViewModel : ViewModelBase
         // the column with no default) — 0 ("no rounding") is the right fallback until then.
         _cart.CashRoundingUnit = reader.IsDBNull(7) ? 0m : decimal.Parse(reader.GetString(7), CultureInfo.InvariantCulture);
         _cart.DecimalDigits = CurrencyInfo.GetDecimalDigits(Currency);
+        _receiptFooterMessage = reader.IsDBNull(8) ? null : reader.GetString(8);
+        _receiptShowCustomerName = reader.IsDBNull(9) || reader.GetInt32(9) != 0;
+        _receiptShowCashierName = reader.IsDBNull(10) || reader.GetInt32(10) != 0;
+        _receiptShowLogo = reader.IsDBNull(11) || reader.GetInt32(11) != 0;
     }
 
     private async Task LoadPrinterAsync()

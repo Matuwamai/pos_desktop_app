@@ -18,7 +18,14 @@ public sealed record ReceiptDocument(
     decimal TaxTotal,
     decimal Total,
     IReadOnlyList<ReceiptPayment> Payments,
-    decimal CashRoundingAdjustment = 0m)
+    decimal CashRoundingAdjustment = 0m,
+    // null means "use the hardcoded fallback" — see EscPosEncoder.cs. The three show
+    // flags default true so every existing call site (tests, PrinterSettingsDialog's
+    // test print) keeps behaving exactly as before without needing to pass them.
+    string? FooterMessage = null,
+    bool ShowCustomerName = true,
+    bool ShowCashierName = true,
+    bool ShowLogo = true)
 {
     private string MoneyFormat => CurrencyInfo.GetDecimalDigits(Currency) == 0 ? "0" : "0." + new string('0', CurrencyInfo.GetDecimalDigits(Currency));
 
@@ -29,6 +36,10 @@ public sealed record ReceiptDocument(
     public string CashRoundingAdjustmentText =>
         (CashRoundingAdjustment > 0 ? "" : "-") + Math.Abs(CashRoundingAdjustment).ToString(MoneyFormat, CultureInfo.InvariantCulture);
     public string TotalText => Total.ToString(MoneyFormat, CultureInfo.InvariantCulture);
+    // Convenience for XAML bindings, which can't express a compound boolean or a
+    // string-with-fallback inline the way EscPosEncoder.cs's plain C# code can.
+    public bool ShowCustomerNameLine => ShowCustomerName && CustomerName is { Length: > 0 };
+    public string FooterMessageText => FooterMessage is { Length: > 0 } ? FooterMessage : "Thank you for your business!";
 }
 
 /// <summary><see cref="DecimalDigits"/> defaults to 2 and is set at construction time

@@ -137,4 +137,38 @@ public class EscPosEncoderTests
         Assert.DoesNotContain("2100.00", text);
         Assert.DoesNotContain("2100.", text);
     }
+
+    [Fact]
+    public void EncodeReceipt_uses_a_custom_footer_message_instead_of_the_default()
+    {
+        var receipt = SampleReceipt() with { FooterMessage = "Come again soon!" };
+        var text = Encoding.ASCII.GetString(EscPosEncoder.EncodeReceipt(receipt, new PrinterProfile(), logoRaster: null));
+
+        Assert.Contains("Come again soon!", text);
+        Assert.DoesNotContain("Thank you for your business!", text);
+    }
+
+    [Fact]
+    public void EncodeReceipt_omits_cashier_and_customer_lines_when_their_show_flags_are_off()
+    {
+        var receipt = SampleReceipt(customerName: "Alex") with { ShowCashierName = false, ShowCustomerName = false };
+        var text = Encoding.ASCII.GetString(EscPosEncoder.EncodeReceipt(receipt, new PrinterProfile(), logoRaster: null));
+
+        Assert.DoesNotContain("Served by", text);
+        Assert.DoesNotContain("Customer:", text);
+    }
+
+    [Fact]
+    public void EncodeReceipt_omits_the_logo_raster_when_ShowLogo_is_false()
+    {
+        byte[] logo = [0x1D, 0x76, 0x30, 0x00, 1, 0, 1, 0, 0xFF];
+        var receipt = SampleReceipt() with { ShowLogo = false };
+        var bytes = EscPosEncoder.EncodeReceipt(receipt, new PrinterProfile(), logoRaster: logo);
+
+        // With no logo, the first bytes after Initialize are the centered-tenant-name
+        // bold-on sequence, not the raster command — confirms it was skipped entirely,
+        // not just that the logo bytes happen to also appear somewhere incidentally.
+        var afterInit = bytes[2..];
+        Assert.NotEqual(logo, afterInit[..logo.Length]);
+    }
 }

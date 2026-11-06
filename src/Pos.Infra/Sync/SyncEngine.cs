@@ -280,7 +280,12 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
                 ("mpesa_type", tenant.MpesaType), ("mpesa_shortcode", tenant.MpesaShortcode),
                 ("mpesa_stk_configured", SqlFormat.Bool(tenant.MpesaStkConfigured)),
                 ("stripe_configured", SqlFormat.Bool(tenant.StripeConfigured)),
-                ("cash_rounding_unit", SqlFormat.Money(tenant.EffectiveCashRoundingUnit)), ("updated_at", tenant.UpdatedAt));
+                ("cash_rounding_unit", SqlFormat.Money(tenant.EffectiveCashRoundingUnit)),
+                ("receipt_footer_message", tenant.ReceiptFooterMessage),
+                ("receipt_show_customer_name", SqlFormat.Bool(tenant.ReceiptShowCustomerName)),
+                ("receipt_show_cashier_name", SqlFormat.Bool(tenant.ReceiptShowCashierName)),
+                ("receipt_show_logo", SqlFormat.Bool(tenant.ReceiptShowLogo)),
+                ("updated_at", tenant.UpdatedAt));
 
         await tx.CommitAsync(ct);
     }

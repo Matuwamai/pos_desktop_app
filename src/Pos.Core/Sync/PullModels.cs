@@ -44,6 +44,11 @@ public sealed class TenantRow
     // Already resolved server-side (tenant's own override, else the currency's
     // default) — see services/tenantSelf.js's present() / services/sync.js.
     public decimal EffectiveCashRoundingUnit { get; set; }
+    // null means "use the hardcoded fallback" — see EscPosEncoder.cs.
+    public string? ReceiptFooterMessage { get; set; }
+    public bool ReceiptShowCustomerName { get; set; } = true;
+    public bool ReceiptShowCashierName { get; set; } = true;
+    public bool ReceiptShowLogo { get; set; } = true;
     public string UpdatedAt { get; set; } = "";
 }
 

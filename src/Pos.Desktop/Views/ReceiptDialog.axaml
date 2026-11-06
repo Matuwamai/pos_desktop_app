@@ -18,9 +18,10 @@
         <TextBlock Text="{Binding Receipt.LocationName}" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Receipt.TerminalReceiptNo, StringFormat='{}{0}'}" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Receipt.Currency}" Foreground="{StaticResource MutedBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,4" />
-        <TextBlock Text="{Binding Receipt.CashierName, StringFormat='Served by {0}'}" Foreground="{StaticResource MutedBrush}" FontSize="11" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Receipt.CashierName, StringFormat='Served by {0}'}" Foreground="{StaticResource MutedBrush}" FontSize="11" HorizontalAlignment="Center"
+                   IsVisible="{Binding Receipt.ShowCashierName}" />
         <TextBlock Text="{Binding Receipt.CustomerName, StringFormat='Customer: {0}'}" Foreground="{StaticResource MutedBrush}" FontSize="11" HorizontalAlignment="Center"
-                   IsVisible="{Binding Receipt.CustomerName, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,0,0,4" />
+                   IsVisible="{Binding Receipt.ShowCustomerNameLine}" Margin="0,0,0,4" />
 
         <ItemsControl ItemsSource="{Binding Receipt.Lines}">
           <ItemsControl.ItemTemplate>
@@ -53,6 +54,9 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <TextBlock Text="{Binding Receipt.FooterMessageText}" Foreground="{StaticResource MutedBrush}" FontSize="11" HorizontalAlignment="Center"
+                   TextWrapping="Wrap" TextAlignment="Center" Margin="0,8,0,0" />
       </StackPanel>
     </ScrollViewer>
   </DockPanel>
