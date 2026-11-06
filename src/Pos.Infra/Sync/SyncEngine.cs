@@ -278,7 +278,8 @@ public sealed class SyncEngine(LocalDatabase db, ApiClient api)
             await UpsertAsync(tx, "tenant", "id", ("id", TenantSingletonId), ("name", tenant.Name), ("logo_url", tenant.LogoUrl),
                 ("currency", tenant.Currency),
                 ("mpesa_type", tenant.MpesaType), ("mpesa_shortcode", tenant.MpesaShortcode),
-                ("mpesa_stk_configured", SqlFormat.Bool(tenant.MpesaStkConfigured)), ("updated_at", tenant.UpdatedAt));
+                ("mpesa_stk_configured", SqlFormat.Bool(tenant.MpesaStkConfigured)),
+                ("stripe_configured", SqlFormat.Bool(tenant.StripeConfigured)), ("updated_at", tenant.UpdatedAt));
 
         await tx.CommitAsync(ct);
     }

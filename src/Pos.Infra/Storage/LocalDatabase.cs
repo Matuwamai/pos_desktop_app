@@ -13,6 +13,7 @@ public sealed class LocalDatabase : IAsyncDisposable
         (Migration0004Payments.Version, Migration0004Payments.Sql),
         (Migration0005MpesaStk.Version, Migration0005MpesaStk.Sql),
         (Migration0006Currency.Version, Migration0006Currency.Sql),
+        (Migration0007StripeConfigured.Version, Migration0007StripeConfigured.Sql),
     ];
 
     private readonly SqliteConnection _connection;

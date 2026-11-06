@@ -30,6 +30,17 @@
                 <TextBlock Text="{Binding StkStatusText}" FontSize="12" Foreground="{StaticResource DangerBrush}" IsVisible="{Binding HasStkStatus}" />
               </StackPanel>
 
+              <StackPanel IsVisible="{Binding IsStripeWithCheckout}" Spacing="6">
+                <Button Content="Generate QR to pay" IsVisible="{Binding !IsCreatingStripeIntent}"
+                        Command="{Binding $parent[ItemsControl].((vm:PaymentDialogViewModel)DataContext).CreateStripeIntentCommand}" CommandParameter="{Binding}" />
+                <StackPanel Spacing="4" HorizontalAlignment="Center" IsVisible="{Binding StripeQrCodeBitmap, Converter={x:Static ObjectConverters.IsNotNull}}">
+                  <TextBlock Text="Have the customer scan this to pay on their own phone" FontSize="12" TextWrapping="Wrap" HorizontalAlignment="Center" />
+                  <Image Source="{Binding StripeQrCodeBitmap}" Width="160" Height="160" />
+                </StackPanel>
+                <TextBlock Text="Paid ✓" FontSize="12" Foreground="{StaticResource AccentBrush}" IsVisible="{Binding IsStripePaid}" />
+                <TextBlock Text="{Binding StripeStatusText}" FontSize="12" Foreground="{StaticResource DangerBrush}" IsVisible="{Binding HasStripeStatus}" />
+              </StackPanel>
+
               <TextBox Text="{Binding TransactionRef}" PlaceholderText="M-Pesa confirmation code" IsVisible="{Binding IsMpesa}" />
               <TextBox Text="{Binding TransactionRef}" PlaceholderText="Reference (card/other)" IsVisible="{Binding IsCardOrOther}" />
               <!-- The server checks and decrements the card's balance atomically at sync

@@ -131,6 +131,27 @@ public sealed class ApiClient
         return await response.Content.ReadFromJsonAsync<PaymentIntentResult>(JsonOptions, ct)
                ?? throw new ApiClientException("Empty payment-intent response");
     }
+    public async Task<StripePaymentIntentResult> CreateStripePaymentIntentAsync(string deviceToken, decimal amount, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "payment-intents/stripe")
+        {
+            Content = JsonContent.Create(new { amount }, options: JsonOptions),
+        };
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<StripePaymentIntentResult>(JsonOptions, ct)
+               ?? throw new ApiClientException("Empty stripe payment-intent response");
+    }
+    public async Task<StripePaymentIntentResult> GetStripePaymentIntentAsync(string deviceToken, string intentId, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"payment-intents/stripe/{intentId}");
+        Authorize(request, deviceToken);
+        using var response = await _http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<StripePaymentIntentResult>(JsonOptions, ct)
+               ?? throw new ApiClientException("Empty stripe payment-intent response");
+    }
     public async Task<PromotionDto> GetPromotionByCodeAsync(string deviceToken, string code, CancellationToken ct = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, $"promotions/by-code/{Uri.EscapeDataString(code)}");
@@ -231,6 +252,14 @@ public sealed class PaymentIntentResult
     public string Id { get; set; } = "";
     public string Status { get; set; } = ""; // PENDING | COMPLETED | FAILED | CANCELLED | TIMEOUT
     public string? ResultDesc { get; set; }
+    public string? TransactionRef { get; set; }
+}
+public sealed class StripePaymentIntentResult
+{
+    public string Id { get; set; } = "";
+    public string Status { get; set; } = ""; // PENDING | COMPLETED | FAILED | CANCELLED | TIMEOUT
+    public string? CheckoutUrl { get; set; }
+    public string? QrCodeDataUrl { get; set; }
     public string? TransactionRef { get; set; }
 }
 public sealed class PromotionDto

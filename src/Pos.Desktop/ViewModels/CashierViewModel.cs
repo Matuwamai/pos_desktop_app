@@ -38,6 +38,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     private string? _mpesaType;
     private string? _mpesaShortcode;
     private bool _mpesaStkConfigured;
+    private bool _stripeConfigured;
     private IReceiptPrinter? _printer;
     private bool _openDrawerOnCash;
     private bool _deviceInvalidated;
@@ -132,7 +133,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     public Func<CatalogProduct, IReadOnlyList<ModifierGroupOptions>, Task<CartLine?>>? ShowVariantPicker { get; set; }
     public Func<string, decimal?, string?, decimal, Task<(bool Applied, decimal Amount, string? Reason, string? PromotionCode)>>? ShowDiscountDialog { get; set; }
     public Func<bool, Task<(bool Applied, string Id, string Name)>>? ShowCustomerDialog { get; set; }
-    public Func<decimal, string?, string?, bool, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
+    public Func<decimal, string?, string?, bool, bool, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerOpenDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerCloseDialog { get; set; }
     public Func<ReceiptDocument, Task>? ShowReceiptDialog { get; set; }
@@ -305,7 +306,7 @@ public sealed partial class CashierViewModel : ViewModelBase
         if (ShowPaymentDialog is null) return;
         var totals = _cart.ComputeTotals();
         CustomerStoreCreditBalance = await GetCustomerStoreCreditBalanceAsync(_cart.CustomerId);
-        var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode, _mpesaStkConfigured);
+        var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode, _mpesaStkConfigured, _stripeConfigured);
         if (payments is null) return;
 
         SaleResult result;
@@ -458,7 +459,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     private async Task LoadTenantAsync()
     {
         await using var cmd = _db.Connection.CreateCommand();
-        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured, currency FROM tenant WHERE id = 'self'";
+        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured, currency, stripe_configured FROM tenant WHERE id = 'self'";
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync()) return;
 
@@ -469,6 +470,7 @@ public sealed partial class CashierViewModel : ViewModelBase
         _mpesaShortcode = reader.IsDBNull(3) ? null : reader.GetString(3);
         _mpesaStkConfigured = !reader.IsDBNull(4) && reader.GetInt32(4) != 0;
         Currency = reader.IsDBNull(5) ? "USD" : reader.GetString(5);
+        _stripeConfigured = !reader.IsDBNull(6) && reader.GetInt32(6) != 0;
         _cart.DecimalDigits = CurrencyInfo.GetDecimalDigits(Currency);
     }
 

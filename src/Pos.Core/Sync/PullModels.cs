@@ -38,6 +38,9 @@ public sealed class TenantRow
     // Whether the tenant has Daraja credentials configured server-side — never the
     // credentials themselves, which never cross the sync wire at all.
     public bool MpesaStkConfigured { get; set; }
+    // Whether the tenant has a Stripe secret key configured server-side — never the key
+    // itself, which never crosses the sync wire either.
+    public bool StripeConfigured { get; set; }
     public string UpdatedAt { get; set; } = "";
 }
 
