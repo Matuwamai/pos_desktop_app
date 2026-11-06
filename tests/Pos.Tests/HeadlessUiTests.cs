@@ -133,6 +133,35 @@ public class HeadlessUiTests
         RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog-jpy.png"));
     }
 
+    // A 1x1 transparent PNG, base64-encoded as a data URL — stands in for the server's
+    // real QRCode.toDataURL() output, which this test doesn't need network access to
+    // obtain: it's only proving TenderLineViewModel.StripeQrCodeBitmap actually decodes
+    // a data URL into a real Bitmap Avalonia can render, not exercising the live API call.
+    private const string FakeQrDataUrl =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
+    [Fact]
+    public void PaymentDialog_stripe_line_decodes_and_renders_the_server_rendered_qr_code()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new PaymentDialogViewModel(total: 24.34m, isOnline: true, currency: "USD", stripeConfigured: true);
+        Assert.Contains(Pos.Core.Sync.OfflinePaymentMethod.Stripe, vm.Methods);
+
+        var line = vm.Lines[0];
+        line.Method = Pos.Core.Sync.OfflinePaymentMethod.Stripe;
+        Assert.True(line.IsStripeWithCheckout);
+
+        line.StripeQrCodeDataUrl = FakeQrDataUrl;
+        Assert.NotNull(line.StripeQrCodeBitmap);
+        Assert.False(line.IsStripePaid);
+
+        line.TransactionRef = "some-intent-id";
+        Assert.True(line.IsStripePaid);
+
+        var view = new PaymentDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog-stripe.png"));
+    }
+
     [Fact]
     public void DiscountDialog_jpy_currency_amount_field_has_no_decimal_point()
     {
