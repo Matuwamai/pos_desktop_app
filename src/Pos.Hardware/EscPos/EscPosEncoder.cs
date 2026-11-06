@@ -61,6 +61,8 @@ public static class EscPosEncoder
         if (receipt.DiscountTotal > 0)
             WriteLine(Columns("Discount", "-" + receipt.DiscountTotal.ToString(moneyFormat, CultureInfo.InvariantCulture), width));
         WriteLine(Columns("Tax", receipt.TaxTotal.ToString(moneyFormat, CultureInfo.InvariantCulture), width));
+        if (receipt.HasCashRoundingAdjustment)
+            WriteLine(Columns("Rounding", receipt.CashRoundingAdjustmentText, width));
         Write(EscPosCommands.Bold(true));
         WriteLine(Columns("TOTAL", receipt.Total.ToString(moneyFormat, CultureInfo.InvariantCulture), width));
         Write(EscPosCommands.Bold(false));

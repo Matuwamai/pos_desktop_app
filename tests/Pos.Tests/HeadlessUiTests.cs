@@ -133,6 +133,19 @@ public class HeadlessUiTests
         RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog-jpy.png"));
     }
 
+    [Fact]
+    public void PaymentDialog_aud_single_cash_tender_shows_the_rounded_amount_due()
+    {
+        var tempDir = CreateTempDir();
+        var vm = new PaymentDialogViewModel(total: 24.37m, currency: "AUD", cashRoundingUnit: 0.05m);
+        Assert.Equal("24.37", vm.TotalText);
+        Assert.Equal("24.35", vm.AmountDueText);
+        Assert.True(vm.HasCashRoundingAdjustment);
+
+        var view = new PaymentDialog { DataContext = vm };
+        RenderDialogToPng(view, Path.Combine(tempDir, "payment-dialog-aud-cash-rounding.png"));
+    }
+
     // A 1x1 transparent PNG, base64-encoded as a data URL — stands in for the server's
     // real QRCode.toDataURL() output, which this test doesn't need network access to
     // obtain: it's only proving TenderLineViewModel.StripeQrCodeBitmap actually decodes

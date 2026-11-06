@@ -3,7 +3,10 @@ namespace Pos.Core.Pricing;
 public sealed record PricedLine(decimal UnitPrice, int Quantity, decimal LineSubtotal, decimal TaxAmount, decimal LineTotal);
 
 /// <summary>Order-level totals, mirroring the aggregation in <c>createOrder</c> (same file).</summary>
-public sealed record OrderTotals(decimal Subtotal, decimal DiscountTotal, decimal TaxTotal, decimal Total);
+// CashRoundingAdjustment defaults to 0 here — pricing math itself never applies cash
+// rounding (Pos.Core.Pricing.CashRounding is a payment-time concern, computed in
+// Cart.ToOfflineOrderPayload, not here); SaleService threads the real value through.
+public sealed record OrderTotals(decimal Subtotal, decimal DiscountTotal, decimal TaxTotal, decimal Total, decimal CashRoundingAdjustment = 0m);
 public sealed record DiscountInput(decimal Amount);
 public static class PricingMath
 {

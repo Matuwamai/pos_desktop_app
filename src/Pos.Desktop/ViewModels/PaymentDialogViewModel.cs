@@ -110,11 +110,14 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
     public string? CustomerStoreCreditBalanceText => CustomerStoreCreditBalance?.ToString(_moneyFormat, CultureInfo.InvariantCulture);
 
 
+    private readonly decimal _cashRoundingUnit;
+
     public PaymentDialogViewModel(decimal total, string? mpesaType = null, string? mpesaShortcode = null,
         bool mpesaStkConfigured = false, ApiClient? api = null, string? deviceToken = null, bool isOnline = false,
         string? customerId = null, decimal? customerStoreCreditBalance = null, string currency = "USD",
-        bool stripeConfigured = false)
+        bool stripeConfigured = false, decimal cashRoundingUnit = 0m)
     {
+        _cashRoundingUnit = cashRoundingUnit;
         Currency = currency;
         _decimalDigits = CurrencyInfo.GetDecimalDigits(currency);
         _moneyFormat = _decimalDigits == 0 ? "0" : "0." + new string('0', _decimalDigits);
@@ -141,7 +144,9 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
             ? [.. onlineMethods]
             : [OfflinePaymentMethod.Cash, OfflinePaymentMethod.Card, OfflinePaymentMethod.Mpesa, OfflinePaymentMethod.Other];
 
-        AddLineInternal(OfflinePaymentMethod.Cash, total);
+        // The default line is CASH, so its starting amount can already reflect the
+        // rounded figure rather than the exact total the cashier would have to adjust.
+        AddLineInternal(OfflinePaymentMethod.Cash, Money.RoundToNearest(total, cashRoundingUnit));
     }
 
     public string? MpesaShortcode { get; }
@@ -156,9 +161,19 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
         OnPropertyChanged(nameof(RemainingText));
         OnPropertyChanged(nameof(CanSubmit));
         OnPropertyChanged(nameof(HasMpesaLine));
+        OnPropertyChanged(nameof(AmountDue));
+        OnPropertyChanged(nameof(AmountDueText));
+        OnPropertyChanged(nameof(HasCashRoundingAdjustment));
     }
 
     public bool HasMpesaLine => Lines.Any(l => l.Method == OfflinePaymentMethod.Mpesa);
+
+    // Mirrors the server's own single-cash-payment gate (services/order.js's
+    // createOrder) exactly — only ever applies when the whole sale is one cash tender.
+    private bool IsSingleCashLine => Lines.Count == 1 && Lines[0].Method == OfflinePaymentMethod.Cash;
+    public decimal AmountDue => IsSingleCashLine ? Money.RoundToNearest(Total, _cashRoundingUnit) : Total;
+    public string AmountDueText => AmountDue.ToString(_moneyFormat, CultureInfo.InvariantCulture);
+    public bool HasCashRoundingAdjustment => AmountDue != Total;
 
     private void AddLineInternal(string method, decimal amount)
     {
@@ -173,7 +188,7 @@ public sealed partial class PaymentDialogViewModel : ViewModelBase
     public ObservableCollection<TenderLineViewModel> Lines { get; } = [];
 
     public decimal Tendered => Lines.Sum(l => l.Amount);
-    public decimal Remaining => Money.Round(Total - Tendered, _decimalDigits);
+    public decimal Remaining => Money.Round(AmountDue - Tendered, _decimalDigits);
     public string RemainingText => Remaining.ToString(_moneyFormat, CultureInfo.InvariantCulture);
     public bool CanSubmit => Remaining <= 0.001m && Lines.Count > 0 &&
         Lines.All(l => l.Amount > 0

@@ -42,6 +42,7 @@
         <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Subtotal" /><TextBlock Grid.Column="1" Text="{Binding Receipt.SubtotalText}" /></Grid>
         <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Receipt.DiscountTotal}"><TextBlock Text="Discount" /><TextBlock Grid.Column="1" Text="{Binding Receipt.DiscountTotalText}" Foreground="{StaticResource DangerBrush}" /></Grid>
         <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Tax" /><TextBlock Grid.Column="1" Text="{Binding Receipt.TaxTotalText}" /></Grid>
+        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Receipt.HasCashRoundingAdjustment}"><TextBlock Text="Rounding" /><TextBlock Grid.Column="1" Text="{Binding Receipt.CashRoundingAdjustmentText}" /></Grid>
         <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Total" FontWeight="Bold" FontSize="16" /><TextBlock Grid.Column="1" Text="{Binding Receipt.TotalText}" FontWeight="Bold" FontSize="16" /></Grid>
 
         <Separator Margin="0,8" />

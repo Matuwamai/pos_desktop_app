@@ -7,6 +7,7 @@
         WindowStartupLocation="CenterOwner">
   <StackPanel Margin="20" Spacing="12">
     <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Currency, StringFormat='Total due ({0})'}" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="{Binding TotalText}" FontWeight="Bold" FontSize="18" /></Grid>
+    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasCashRoundingAdjustment}"><TextBlock Text="Rounded for cash" Foreground="{StaticResource MutedBrush}" /><TextBlock Grid.Column="1" Text="{Binding AmountDueText}" Foreground="{StaticResource MutedBrush}" /></Grid>
     <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Remaining" Foreground="{StaticResource MutedBrush}" /><TextBlock Grid.Column="1" Text="{Binding RemainingText}" Foreground="{StaticResource MutedBrush}" /></Grid>
     <TextBlock Text="{Binding CustomerStoreCreditBalanceText, StringFormat='Store credit available: {0}'}" Foreground="{StaticResource MutedBrush}" FontSize="12" IsVisible="{Binding ShowStoreCreditBalance}" />
     <Border BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="{StaticResource AppCornerRadius}" Padding="10" IsVisible="{Binding HasMpesaLine}">

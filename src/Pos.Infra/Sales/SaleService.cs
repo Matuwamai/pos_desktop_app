@@ -69,7 +69,7 @@ public sealed class SaleService(LocalDatabase db, string terminalId)
 
         await tx.CommitAsync(ct);
         // Reuse the totals already computed once for the payload rather than repricing the cart again.
-        var totals = new OrderTotals(payload.Subtotal, payload.DiscountTotal, payload.TaxTotal, payload.Total);
+        var totals = new OrderTotals(payload.Subtotal, payload.DiscountTotal, payload.TaxTotal, payload.Total, payload.CashRoundingAdjustment);
         return new SaleResult(orderId, receiptNo, totals);
     }
 

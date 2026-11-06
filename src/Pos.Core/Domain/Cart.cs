@@ -28,6 +28,9 @@ public sealed class Cart
     public string? DiscountReason { get; set; }
     public int DecimalDigits { get; set; } = 2;
     public string? DiscountPromotionCode { get; set; }
+    // Already resolved (tenant's own override, else the currency's default) — see
+    // Pos.Core.Pricing.CashRounding. 0 means no rounding.
+    public decimal CashRoundingUnit { get; set; }
 
     public void AddOrIncrement(CartLine line)
     {
@@ -83,6 +86,16 @@ public sealed class Cart
             });
         }
 
+        // Mirrors the server's createOrder/importOfflineOrder exactly: cash rounding
+        // only ever applies to a single cash tender covering the whole sale. The
+        // server independently recomputes and strictly validates this same total at
+        // sync time (services/offlineSync.js), so this can't just be a display nicety
+        // — it has to match bit for bit, or the sync gets rejected.
+        var isSingleCashPayment = payments.Count == 1 && payments[0].Method == OfflinePaymentMethod.Cash;
+        var effectiveUnit = isSingleCashPayment ? CashRoundingUnit : 0m;
+        var roundedTotal = Money.RoundToNearest(totals.Total, effectiveUnit);
+        var cashRoundingAdjustment = Money.Round(roundedTotal - totals.Total, DecimalDigits);
+
         return new OfflineOrderPayload
         {
             Id = id,
@@ -100,7 +113,8 @@ public sealed class Cart
             Subtotal = totals.Subtotal,
             DiscountTotal = totals.DiscountTotal,
             TaxTotal = totals.TaxTotal,
-            Total = totals.Total,
+            CashRoundingAdjustment = cashRoundingAdjustment,
+            Total = roundedTotal,
         };
     }
 }

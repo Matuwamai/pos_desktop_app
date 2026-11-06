@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Net.Sockets;
 using System.Text.Json;
 using Avalonia.Threading;
@@ -133,7 +134,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     public Func<CatalogProduct, IReadOnlyList<ModifierGroupOptions>, Task<CartLine?>>? ShowVariantPicker { get; set; }
     public Func<string, decimal?, string?, decimal, Task<(bool Applied, decimal Amount, string? Reason, string? PromotionCode)>>? ShowDiscountDialog { get; set; }
     public Func<bool, Task<(bool Applied, string Id, string Name)>>? ShowCustomerDialog { get; set; }
-    public Func<decimal, string?, string?, bool, bool, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
+    public Func<decimal, string?, string?, bool, bool, decimal, Task<IReadOnlyList<OfflineOrderPayment>?>>? ShowPaymentDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerOpenDialog { get; set; }
     public Func<Task<decimal?>>? ShowDrawerCloseDialog { get; set; }
     public Func<ReceiptDocument, Task>? ShowReceiptDialog { get; set; }
@@ -306,7 +307,7 @@ public sealed partial class CashierViewModel : ViewModelBase
         if (ShowPaymentDialog is null) return;
         var totals = _cart.ComputeTotals();
         CustomerStoreCreditBalance = await GetCustomerStoreCreditBalanceAsync(_cart.CustomerId);
-        var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode, _mpesaStkConfigured, _stripeConfigured);
+        var payments = await ShowPaymentDialog(totals.Total, _mpesaType, _mpesaShortcode, _mpesaStkConfigured, _stripeConfigured, _cart.CashRoundingUnit);
         if (payments is null) return;
 
         SaleResult result;
@@ -326,7 +327,8 @@ public sealed partial class CashierViewModel : ViewModelBase
             CashierName: SignedInAs.Name, CustomerName: _cart.CustomerName,
             Lines: [.. _cart.Items.Select(i => new ReceiptLine(i.ProductName, i.Modifiers.Count == 0 ? null : string.Join(", ", i.Modifiers.Select(m => m.Name)), i.Quantity, i.BaseUnitPrice + i.ModifiersTotal, i.Quantity * (i.BaseUnitPrice + i.ModifiersTotal), _cart.DecimalDigits))],
             Subtotal: result.Totals.Subtotal, DiscountTotal: result.Totals.DiscountTotal, TaxTotal: result.Totals.TaxTotal, Total: result.Totals.Total,
-            Payments: [.. payments.Select(p => new ReceiptPayment(p.Method, p.Amount, _cart.DecimalDigits))]);
+            Payments: [.. payments.Select(p => new ReceiptPayment(p.Method, p.Amount, _cart.DecimalDigits))],
+            CashRoundingAdjustment: result.Totals.CashRoundingAdjustment);
 
 
         if (_printer is not null)
@@ -459,7 +461,7 @@ public sealed partial class CashierViewModel : ViewModelBase
     private async Task LoadTenantAsync()
     {
         await using var cmd = _db.Connection.CreateCommand();
-        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured, currency, stripe_configured FROM tenant WHERE id = 'self'";
+        cmd.CommandText = "SELECT name, logo_local_path, mpesa_type, mpesa_shortcode, mpesa_stk_configured, currency, stripe_configured, cash_rounding_unit FROM tenant WHERE id = 'self'";
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync()) return;
 
@@ -471,6 +473,9 @@ public sealed partial class CashierViewModel : ViewModelBase
         _mpesaStkConfigured = !reader.IsDBNull(4) && reader.GetInt32(4) != 0;
         Currency = reader.IsDBNull(5) ? "USD" : reader.GetString(5);
         _stripeConfigured = !reader.IsDBNull(6) && reader.GetInt32(6) != 0;
+        // Null until the first /sync/pull populates it (Migration0008CashRounding adds
+        // the column with no default) — 0 ("no rounding") is the right fallback until then.
+        _cart.CashRoundingUnit = reader.IsDBNull(7) ? 0m : decimal.Parse(reader.GetString(7), CultureInfo.InvariantCulture);
         _cart.DecimalDigits = CurrencyInfo.GetDecimalDigits(Currency);
     }
 

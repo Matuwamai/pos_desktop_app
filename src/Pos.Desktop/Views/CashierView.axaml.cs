@@ -81,10 +81,10 @@ public partial class CashierView : UserControl
             return (applied, dialogVm.Result?.Id ?? "", dialogVm.Result?.Name ?? "");
         };
 
-        vm.ShowPaymentDialog = async (total, mpesaType, mpesaShortcode, mpesaStkConfigured, stripeConfigured) =>
+        vm.ShowPaymentDialog = async (total, mpesaType, mpesaShortcode, mpesaStkConfigured, stripeConfigured, cashRoundingUnit) =>
         {
             var dialogVm = new PaymentDialogViewModel(total, mpesaType, mpesaShortcode, mpesaStkConfigured, GetApi(vm), vm.DeviceToken, vm.IsOnline,
-                vm.CartCustomerId, vm.CustomerStoreCreditBalance, vm.Currency, stripeConfigured);
+                vm.CartCustomerId, vm.CustomerStoreCreditBalance, vm.Currency, stripeConfigured, cashRoundingUnit);
             var dialog = new PaymentDialog(dialogVm);
             await dialog.ShowDialog(Owner!);
             return dialogVm.Result;

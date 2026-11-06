@@ -17,13 +17,17 @@ public sealed record ReceiptDocument(
     decimal DiscountTotal,
     decimal TaxTotal,
     decimal Total,
-    IReadOnlyList<ReceiptPayment> Payments)
+    IReadOnlyList<ReceiptPayment> Payments,
+    decimal CashRoundingAdjustment = 0m)
 {
     private string MoneyFormat => CurrencyInfo.GetDecimalDigits(Currency) == 0 ? "0" : "0." + new string('0', CurrencyInfo.GetDecimalDigits(Currency));
 
     public string SubtotalText => Subtotal.ToString(MoneyFormat, CultureInfo.InvariantCulture);
     public string DiscountTotalText => "-" + DiscountTotal.ToString(MoneyFormat, CultureInfo.InvariantCulture);
     public string TaxTotalText => TaxTotal.ToString(MoneyFormat, CultureInfo.InvariantCulture);
+    public bool HasCashRoundingAdjustment => CashRoundingAdjustment != 0m;
+    public string CashRoundingAdjustmentText =>
+        (CashRoundingAdjustment > 0 ? "" : "-") + Math.Abs(CashRoundingAdjustment).ToString(MoneyFormat, CultureInfo.InvariantCulture);
     public string TotalText => Total.ToString(MoneyFormat, CultureInfo.InvariantCulture);
 }
 

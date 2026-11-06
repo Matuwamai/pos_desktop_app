@@ -41,6 +41,9 @@ public sealed class TenantRow
     // Whether the tenant has a Stripe secret key configured server-side — never the key
     // itself, which never crosses the sync wire either.
     public bool StripeConfigured { get; set; }
+    // Already resolved server-side (tenant's own override, else the currency's
+    // default) — see services/tenantSelf.js's present() / services/sync.js.
+    public decimal EffectiveCashRoundingUnit { get; set; }
     public string UpdatedAt { get; set; } = "";
 }
 

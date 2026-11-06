@@ -45,6 +45,10 @@ public sealed class OfflineOrderPayload
     public decimal Subtotal { get; set; }
     public decimal DiscountTotal { get; set; }
     public decimal TaxTotal { get; set; }
+    // Not validated by the server (services/offlineSync.js recomputes it independently
+    // from Total/Subtotal/DiscountTotal/TaxTotal) — carried along purely so the
+    // locally-stored order/receipt can show the same breakdown before syncing.
+    public decimal CashRoundingAdjustment { get; set; }
     public decimal Total { get; set; }
 }
 
